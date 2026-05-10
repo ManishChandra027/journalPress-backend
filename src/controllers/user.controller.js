@@ -85,4 +85,54 @@ const registerUser = asyncHandler(async (req, res) => {
         );
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+    //get data from user
+    const { username, email, password } = req.body;
+    //validate data
+    if (username && email) {
+        throw new ApiError(400, "username or email fields are required");
+    }
+    if (!password) throw new ApiError(400, "password is required");
+    //check user already in db
+    const user = await User.findOne({
+        $or: [{ email }, { username }],
+    });
+    if (!user) {
+        throw new ApiError(409, "User does't exist ,plz regestired first");
+    }
+    //check pass
+    const isPassValid = await user.isPasswordValid(password);
+    if (!isPassValid) throw new ApiError(401, "Password does not correct");
+    //generate tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+        user._id
+    );
+    const loginUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    );
+    if (!loginUser) throw new ApiError(401, "User not login ,somthing wrong");
+
+    //retuen user
+    res.status(201)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                201,
+                { user: loginUser, accessToken },
+                "User Login Successfully"
+            )
+        );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    await User.findByIdAndUpdate(userId,{
+        $unset: { refreshToken: 1 },
+    });
+    res.status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, null, "User logged out successfully"));
+});
+export { registerUser, loginUser ,logoutUser };

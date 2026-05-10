@@ -4,19 +4,20 @@
   "description": "A modern full-stack blogging and publishing platform built with the MERN stack, featuring JWT authentication, role-based access control, markdown blog editor, comments, search, and responsive UI for seamless content creation and management.",
   "license": "ISC",
   "author": "Manish Chandra",
-  "type": "commonjs",
+  "type": "module",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon /src/app.js"
+    "dev": "nodemon src/index.js"
   },
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "mongoose": "^9.6.1",
+    "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.1",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
     "multer": "^2.1.1"
   },

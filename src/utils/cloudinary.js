@@ -35,4 +35,10 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 };
 
+// Todo
+// add file size validation
+// mime type validation
+// upload timeout handling
+// delete old cloudinary images
+
 export { uploadOnCloudinary };

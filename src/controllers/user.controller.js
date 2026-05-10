@@ -2,6 +2,7 @@ import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 // import jwt from "jsonwebtoken";
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -43,14 +44,24 @@ const registerUser = asyncHandler(async (req, res) => {
     if (isUserExist) {
         throw new ApiError(409, "User with email or username already exist");
     }
+    //check avatar
+    const avatarLocalPath = req.file?.path;
+    let avatarUrl = "";
+    if (avatarLocalPath) {
+        const avatar = await uploadOnCloudinary(avatarLocalPath);
+        if (!avatar)
+            throw new ApiError(400, "error during uplode on Cloudinary");
+        avatarUrl = avatar.url;
+    }
     //save data in db
     const user = await User.create({
         fullName,
         username: username.toLowerCase(),
         email,
         password,
-        bio
-    }); 
+        bio,
+        avatar: avatarUrl,
+    });
     //generate tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id

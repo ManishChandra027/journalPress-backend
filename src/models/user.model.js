@@ -36,8 +36,9 @@ const userSchema = new Schema(
         passwordResetToken: { type: String }, // hashed token store hoga
         passwordResetExpires: { type: Date }, // expiry
         
-        emailVerificationToken: { type: String },
-        emailVerificationExpires: { type: Date },
+        emailVerificationToken: { type: String },// hashed token store hoga
+        emailVerificationExpires: { type: Date },// expiry
+        
 
         // ai feature  for future
         aiPreferences: {

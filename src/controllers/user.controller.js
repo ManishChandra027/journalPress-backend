@@ -239,16 +239,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
                 <p>If you did not request this, please ignore this email.</p>
                 `,
         });
-
-        return res
-            .status(200)
-            .json(
-                new ApiResponse(
-                    200,
-                    null,
-                    "If an account exists, a reset link has been sent."
-                )
-            );
     } catch (emailError) {
         // Email fail — DB clean
         user.passwordResetToken = undefined;
@@ -260,6 +250,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
             "Unable to send the email at the moment. Please try again later."
         );
     }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                null,
+                "If an account exists, a reset link has been sent."
+            )
+        );
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
@@ -290,6 +290,83 @@ const resetPassword = asyncHandler(async (req, res) => {
     );
 });
 
+const requestEmailVerification = asyncHandler(async (req, res) => {
+    //  Logged in user — req.user middleware se aayega
+    const user = await User.findById(req.user._id);
+    if (user.isVerified) throw new ApiError(400, "Email is already verified");
+    //generate token
+    const { rawToken, hashedToken } = generateResetToken();
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationExpires = Date.now() + 30 * 60 * 1000; // 30 min
+    await user.save({ validateBeforeSave: false });
+    const verifyURL = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
+    //send to mail
+    try {
+        await sendEmail({
+            to: user.email,
+            subject: "Email Verify Request",
+            html: `
+               <h2>Email Verification</h2>
+          <p>Apna email verify karo taaki tum blog post, comment
+          aur subscribe kar sako.</p>
+          
+            href="${verifyURL}"
+            style="
+              background:#4F46E5;
+              color:white;
+              padding:12px 24px;
+              border-radius:6px;
+              text-decoration:none;
+            "
+          >
+            Verify Email
+          </a>
+          <p>Ye link 24 hours mein expire hoga.</p>
+        `,
+        });
+    } catch (emailError) {
+        // Email fail — DB clean
+        user.emailVerificationToken = undefined;
+        user.emailVerificationToken = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        throw new ApiError(
+            500,
+            "Unable to send the email at the moment. Please try again later."
+        );
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                null,
+                "If an email exists, a verify link has been sent."
+            )
+        );
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+    if (!token) throw new ApiError(400, "Token and new password are required");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+   
+     const user = await User.findOne({
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: { $gt: Date.now() },
+    });
+    if (!user)
+        throw new ApiError(400, "Invalid or expired password reset token");
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    res.status(200).json(
+        new ApiResponse(200, null, "Email verified successfully")
+    );
+});
+
 export {
     registerUser,
     loginUser,
@@ -298,4 +375,7 @@ export {
     updatePassword,
     forgotPassword,
     resetPassword,
+    requestEmailVerification,
+    verifyEmail,
+
 };

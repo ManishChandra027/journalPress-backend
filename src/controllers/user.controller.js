@@ -3,7 +3,11 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-// import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import generateResetToken from "../utils/generateResetToken.js";
+import sendEmail from "../utils/sendEmail.js";
+
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId);
@@ -127,7 +131,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    await User.findByIdAndUpdate(userId,{
+    await User.findByIdAndUpdate(userId, {
         $unset: { refreshToken: 1 },
     });
     res.status(200)
@@ -135,4 +139,163 @@ const logoutUser = asyncHandler(async (req, res) => {
         .clearCookie("refreshToken", options)
         .json(new ApiResponse(200, null, "User logged out successfully"));
 });
-export { registerUser, loginUser ,logoutUser };
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    //get token from user from cookie or body
+    const incomingRefreshToken =
+        req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) {
+        throw new ApiError(400, "Refresh token is required");
+    }
+    //verify from jwt
+    const decodedToken = jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+    );
+    if (!decodedToken) throw new ApiError(401, "Invalid Refresh token");
+    //check in db token is exist or not
+    const user = await User.findById(decodedToken._id);
+    if (!user || user.refreshToken !== incomingRefreshToken)
+        throw new ApiError(401, "Invalid Refresh token");
+    //send new refresh token to user
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+        user._id
+    );
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                { accessToken, refreshToken },
+                "Access token refreshed successfully"
+            )
+        );
+});
+
+const updatePassword = asyncHandler(async (req, res) => {
+    //fetch detailed and validations
+    const { currendPassword, updatedPassword } = req.body;
+    if (
+        !currendPassword ||
+        !updatedPassword ||
+        currendPassword.trim() === "" ||
+        currendPassword.trim() === "" ||
+        currendPassword.trim() === updatedPassword.trim()
+    )
+        throw new ApiError(
+            401,
+            "Current password and new password are required and should not be same"
+        );
+    //
+
+    // find user in db
+    const user = await User.findById(req.user._id);
+    const isCurrentPasswordValid = await user.isPasswordValid(currendPassword);
+    if (!isCurrentPasswordValid)
+        throw new ApiError(401, "Current password is incorrect");
+    //save new pass in db
+    user.password = updatedPassword;
+    user.save({ ValidateBeforeSave: false });
+    return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Password changed successfully"));
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email) throw new ApiError(400, "email address is required");
+    const user = await User.findOne({ email });
+    // Security: user mile ya na mile, same response
+    if (!user) {
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    201,
+                    null,
+                    "If an account exists, a reset link has been sent."
+                )
+            );
+    }
+    //generate token
+    const { rawToken, hashedToken } = generateResetToken();
+    //save in db
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 30 min
+    await user.save({ validateBeforeSave: false });
+    // create Reset URL ,
+    const resetURL = `${process.env.CLIENT_URL}/reset-password/${rawToken}`; //raw token user send this url to us
+    //send to mail
+    try {
+        await sendEmail({
+            to: user.email,
+            subject: "Password Reset Request",
+            html: `
+                <h2>Password Reset</h2>
+                <p>This link will expire in 30 minutes.</p>
+                <a href="${resetURL}">Reset Password</a>
+                <p>If you did not request this, please ignore this email.</p>
+                `,
+        });
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    null,
+                    "If an account exists, a reset link has been sent."
+                )
+            );
+    } catch (emailError) {
+        // Email fail — DB clean
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        throw new ApiError(
+            500,
+            "Unable to send the email at the moment. Please try again later."
+        );
+    }
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+    //get token
+    const { token } = req.params;
+    const { newPassword } = req.body;
+    if (!token || !newPassword)
+        throw new ApiError(400, "Token and new password are required");
+    //hash token to compare with db token because we save hashed token in db and user send us raw token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    // find user by hashed token with expire
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() },
+    });
+
+    if (!user)
+        throw new ApiError(400, "Invalid or expired password reset token");
+    //update new pass in db
+    user.password = newPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.refreshToken = undefined; // Security: invalidate all existing sessions by removing refresh token
+    //after reset password user must have to login again so we will remove refresh token from db and cookie
+    await user.save();
+    res.status(200).json(
+        new ApiResponse(200, null, "Password reset successfully")
+    );
+});
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    updatePassword,
+    forgotPassword,
+    resetPassword,
+};

@@ -1,0 +1,14 @@
+import crypto from "crypto";
+const generateResetToken = () => {
+    // generate random token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    // hash token
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+    // return BOTH
+    return { rawToken, hashedToken };
+};
+
+export default generateResetToken;

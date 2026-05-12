@@ -33,6 +33,11 @@ const userSchema = new Schema(
         isVerified: { type: Boolean, default: false },
 
         refreshToken: { type: String },
+        passwordResetToken: { type: String }, // hashed token store hoga
+        passwordResetExpires: { type: Date }, // expiry
+        
+        emailVerificationToken: { type: String },
+        emailVerificationExpires: { type: Date },
 
         // ai feature  for future
         aiPreferences: {

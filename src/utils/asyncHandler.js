@@ -7,6 +7,7 @@ const asyncHandler = (fn) => {
                 success: false,
                 message: err.message,
             });
+            console.error(err);
         }
     };
 };

@@ -5,7 +5,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import generateResetToken from "../utils/generateResetToken.js";
+import generateTemporaryToken from "../utils/generateTemporaryToken.js";
 import sendEmail from "../utils/sendEmail.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -42,8 +42,9 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "all fields are required");
     }
     //check user already in db
+    const normalizedEmail = email.toLowerCase().trim();
     const isUserExist = await User.findOne({
-        $or: [{ email }, { username }],
+        $or: [{ normalizedEmail }, { username }],
     });
     if (isUserExist) {
         throw new ApiError(409, "User with email or username already exist");
@@ -61,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const user = await User.create({
         fullName,
         username: username.toLowerCase(),
-        email,
+        normalizedEmail,
         password,
         bio,
         avatar: avatarUrl,
@@ -93,13 +94,14 @@ const loginUser = asyncHandler(async (req, res) => {
     //get data from user
     const { username, email, password } = req.body;
     //validate data
-    if (username && email) {
+    if (!username && !email) {
         throw new ApiError(400, "username or email fields are required");
     }
     if (!password) throw new ApiError(400, "password is required");
     //check user already in db
+    const normalizedEmail = email?.toLowerCase().trim();
     const user = await User.findOne({
-        $or: [{ email }, { username }],
+        $or: [{ email: normalizedEmail }, { username }],
     });
     if (!user) {
         throw new ApiError(409, "User does't exist ,plz regestired first");
@@ -111,10 +113,11 @@ const loginUser = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id
     );
-    const loginUser = await User.findById(user._id).select(
+    const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
-    if (!loginUser) throw new ApiError(401, "User not login ,somthing wrong");
+    if (!loggedInUser)
+        throw new ApiError(401, "User not login ,somthing wrong");
 
     //retuen user
     res.status(201)
@@ -123,7 +126,7 @@ const loginUser = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 201,
-                { user: loginUser, accessToken },
+                { user: loggedInUser, accessToken },
                 "User Login Successfully"
             )
         );
@@ -220,7 +223,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
             );
     }
     //generate token
-    const { rawToken, hashedToken } = generateResetToken();
+    const { rawToken, hashedToken } = generateTemporaryToken();
     //save in db
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 30 min
@@ -295,7 +298,7 @@ const requestEmailVerification = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user.isVerified) throw new ApiError(400, "Email is already verified");
     //generate token
-    const { rawToken, hashedToken } = generateResetToken();
+    const { rawToken, hashedToken } = generateTemporaryToken();
     user.emailVerificationToken = hashedToken;
     user.emailVerificationExpires = Date.now() + 30 * 60 * 1000; // 30 min
     await user.save({ validateBeforeSave: false });
@@ -311,13 +314,6 @@ const requestEmailVerification = asyncHandler(async (req, res) => {
           aur subscribe kar sako.</p>
           
             href="${verifyURL}"
-            style="
-              background:#4F46E5;
-              color:white;
-              padding:12px 24px;
-              border-radius:6px;
-              text-decoration:none;
-            "
           >
             Verify Email
           </a>
@@ -351,8 +347,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
     const { token } = req.params;
     if (!token) throw new ApiError(400, "Token and new password are required");
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-   
-     const user = await User.findOne({
+
+    const user = await User.findOne({
         emailVerificationToken: hashedToken,
         emailVerificationExpires: { $gt: Date.now() },
     });
@@ -367,6 +363,93 @@ const verifyEmail = asyncHandler(async (req, res) => {
     );
 });
 
+const changeEmailRequest = asyncHandler(async (req, res) => {
+    const { newEmail } = req.body;
+
+    // validate email
+    if (!newEmail) {
+        throw new ApiError(400, "New email is required");
+    }
+
+    const normalizedEmail = newEmail.toLowerCase().trim();
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // only unverified users can change email
+    if (user.isVerified) {
+        throw new ApiError(403, "Verified users cannot change email");
+    }
+
+    if (user.email.toLowerCase() === normalizedEmail) {
+        throw new ApiError(400, "New email cannot be same as current email");
+    }
+
+    // check email already exists
+    const isEmailExist = await User.findOne({
+        email: normalizedEmail,
+    });
+
+    if (isEmailExist) {
+        throw new ApiError(400, "This email is already in use");
+    }
+
+    user.email = normalizedEmail;
+
+    // mark as unverified again
+    user.isVerified = false;
+    // save updated user
+    await user.save({ validateBeforeSave: false });
+
+    //generate token
+    const { rawToken, hashedToken } = generateTemporaryToken();
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationExpires = Date.now() + 30 * 60 * 1000; // 30 min
+    await user.save({ validateBeforeSave: false });
+    const verifyURL = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
+    //send to mail
+    try {
+        await sendEmail({
+            to: user.email,
+            subject: "Email Verify Request",
+            html: `
+               <h2>Email Verification</h2>
+          <p>Apna email verify karo taaki tum blog post, comment
+          aur subscribe kar sako.</p>
+          
+            href="${verifyURL}"
+          >
+            Verify Email
+          </a>
+          <p>Ye link 24 hours mein expire hoga.</p>
+        `,
+        });
+    } catch (emailError) {
+        // Email fail — DB clean
+        user.emailVerificationToken = undefined;
+        user.emailVerificationToken = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        throw new ApiError(
+            500,
+            "Unable to send the email at the moment. Please try again later."
+        );
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                null,
+                "Email changed successfully. A verification email has been sent to your new email address."
+            )
+        );
+});
+
 export {
     registerUser,
     loginUser,
@@ -377,5 +460,5 @@ export {
     resetPassword,
     requestEmailVerification,
     verifyEmail,
-
+    changeEmailRequest,
 };

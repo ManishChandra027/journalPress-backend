@@ -1,5 +1,5 @@
 import crypto from "crypto";
-const generateResetToken = () => {
+const generateTemporaryToken = () => {
     // generate random token
     const rawToken = crypto.randomBytes(32).toString("hex");
     // hash token
@@ -11,4 +11,4 @@ const generateResetToken = () => {
     return { rawToken, hashedToken };
 };
 
-export default generateResetToken;
+export default generateTemporaryToken;

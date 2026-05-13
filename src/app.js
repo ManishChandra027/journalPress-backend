@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
 const app = express();
 //app.set
 
@@ -21,7 +22,7 @@ app.use(cookieParser());
 // http://localhost:8000/api/v1/auth/
 app.use("/api/v1/auth", authRoutes);
 // http://localhost:8000/api/v1/user/
-// app.use("/api/v1/user");
+// app.use("/api/v1/user",userRoutes);
 
 
 export default app;

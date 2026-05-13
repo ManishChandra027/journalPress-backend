@@ -8,18 +8,15 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
         req.cookies?.accessToken ||
         req.header("Authorization")?.replace("Bearer ", "").trim() ||
         null;
-        // or req.header("Authorization")?.startsWith("Bearer ")
+    // or req.header("Authorization")?.startsWith("Bearer ")
     if (!token) throw new ApiError(401, "Access token is required");
-    const decodedToken =  jwt.verify(
-        token,
-        process.env.ACCESS_TOKEN_SECRET
-    );
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     if (!decodedToken) throw new ApiError(401, "Invalid access token");
     const user = await User.findById(decodedToken._id).select(
         "-password -refreshToken"
     );
     if (!user) throw new ApiError(401, "Invalid access token");
-    req.user=user;
+    req.user = user;
     next();
 });
 

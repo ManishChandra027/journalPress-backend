@@ -11,16 +11,27 @@ import { upload } from "../middlewares/multer.middlewares.js";
 const router = Router();
 // /me
 
-//req authenticated routes
+// Authenticated self routes
+// GET /users/me
+// PATCH /users/me
 router
-    .route("/me")
-    .get(verifyJwt, getCurrentUser)
-    .patch(verifyJwt, updateAccountDetails); // user profile update route with email and name and password update with current password verification
+.route("/me")
+.get(verifyJwt, getCurrentUser)
+.patch(verifyJwt, updateAccountDetails); // user profile update route with email and name and password update with current password verification
 router
-    .route("/me/avatar", updateUserAvatar)
-    .patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
+.route("/me/avatar", updateUserAvatar)
+.patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
 
-router.get("/:username/blogs", verifyJwt, getUserPublishedBlogs); // user published blogs
-router.get("/:username", verifyJwt, getUserPublicProfile); // user public profile with his blogs with folowers and following count and blogs count
+// GET /users/me/blogs
+router.route("/me/blogs").get(verifyJwt, getUserPublishedBlogs);
 
+// Public routes
+// GET /users/:username
+router
+.route("/:username")
+.get(getUserPublicProfile);
+
+// GET /users/:username/blogs
+router.route("/:username/blogs").get(getUserPublishedBlogs);
+// router.get("/:username", getUserPublicProfile); // user public profile with his blogs with folowers and following count and blogs count
 export default router;

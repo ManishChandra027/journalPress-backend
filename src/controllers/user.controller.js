@@ -94,9 +94,23 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     );
 });
 
+// /me/blogs
+const getUserBlogs = asyncHandler(async (req, res) => {});
+
+// /:username
+const getUserPublicProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params;
+    if (!username) throw new ApiError(400, "Username is required");
+    const normalizedUsername =
+    username.toLowerCase().trim();
+    const user = await User.findOne({ username:normalizedUsername }).select("-email -password -refreshToken");
+    if (!user) throw new ApiError(404, "User not found");
+    res.status(200).json(
+        new ApiResponse(200, { user }, "User public profile fetched")
+    );
+});
 // /:username/blogs
 const getUserPublishedBlogs = asyncHandler(async (req, res) => {});
-const getUserPublicProfile = asyncHandler(async (req, res) => {});
 
 export {
     getCurrentUser,
@@ -104,4 +118,6 @@ export {
     updateUserAvatar,
     getUserPublishedBlogs,
     getUserPublicProfile,
+    getUserBlogs,
+    
 };

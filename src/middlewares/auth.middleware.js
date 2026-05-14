@@ -12,9 +12,7 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
     if (!token) throw new ApiError(401, "Access token is required");
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     if (!decodedToken) throw new ApiError(401, "Invalid access token");
-    const user = await User.findById(decodedToken._id).select(
-        "-password -refreshToken"
-    );
+    const user = await User.findById(decodedToken._id)
     if (!user) throw new ApiError(401, "Invalid access token");
     req.user = user;
     next();

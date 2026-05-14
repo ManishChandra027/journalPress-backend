@@ -22,7 +22,11 @@ const userSchema = new Schema(
             trim: true,
         },
 
-        password: { type: String, required: [true, "Password is required"] },
+        password: {
+            type: String,
+            required: [true, "Password is required"],
+            select: false,
+        },
 
         avatar: {
             url: {
@@ -35,18 +39,18 @@ const userSchema = new Schema(
             },
         },
 
-        bio: { type: String, default: "" ,maxlength: 300},
+        bio: { type: String, default: "", maxlength: 300 },
 
         role: { type: String, enum: ["user", "admin"], default: "user" },
 
         isVerified: { type: Boolean, default: false },
 
-        refreshToken: { type: String },
-        passwordResetToken: { type: String }, // hashed token store hoga
-        passwordResetExpires: { type: Date }, // expiry
+        refreshToken: { type: String, select: false },
+        passwordResetToken: { type: String, select: false }, // hashed token store hoga
+        passwordResetExpires: { type: Date, select: false }, // expiry
 
-        emailVerificationToken: { type: String }, // hashed token store hoga
-        emailVerificationExpires: { type: Date }, // expiry
+        emailVerificationToken: { type: String, select: false }, // hashed token store hoga
+        emailVerificationExpires: { type: Date, select: false }, // expiry
 
         // ai feature  for future
         aiPreferences: {
@@ -55,6 +59,7 @@ const userSchema = new Schema(
                 topics: [String],
             },
             default: null,
+            select: false, //bad ma true karna hai jab ai features implement karna hai
         },
     },
     { timestamps: true }

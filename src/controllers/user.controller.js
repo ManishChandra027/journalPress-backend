@@ -103,7 +103,7 @@ const getUserPublicProfile = asyncHandler(async (req, res) => {
     if (!username) throw new ApiError(400, "Username is required");
     const normalizedUsername =
     username.toLowerCase().trim();
-    const user = await User.findOne({ username:normalizedUsername }).select("-email -password -refreshToken");
+    const user = await User.findOne({ username:normalizedUsername })
     if (!user) throw new ApiError(404, "User not found");
     res.status(200).json(
         new ApiResponse(200, { user }, "User public profile fetched")

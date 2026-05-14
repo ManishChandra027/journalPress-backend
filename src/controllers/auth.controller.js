@@ -264,13 +264,42 @@ const forgotPassword = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Password Reset Request",
+             subject: "Verify Your Email Address",
             html: `
-                <h2>Password Reset</h2>
-                <p>This link will expire in 30 minutes.</p>
-                <a href="${resetURL}">Reset Password</a>
-                <p>If you did not request this, please ignore this email.</p>
-                `,
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Email Verification</h2>
+
+            <p>
+                Thank you for registering on JournalPress.
+                Please verify your email address to access all features,
+                including publishing blogs, commenting, and subscriptions.
+            </p>
+
+            <a
+                href="${verifyURL}"
+                style="
+                    display: inline-block;
+                    padding: 10px 18px;
+                    background-color: #111827;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    margin-bottom: 10px;
+                "
+            >
+                Verify Email
+            </a>
+
+            <p>
+                This verification link will expire in 24 hours.
+            </p>
+
+            <p>
+                If you did not create this account, you can safely ignore this email.
+            </p>
+        </div>
+    `,
         });
     } catch (emailError) {
         // Email fail — DB clean
@@ -337,18 +366,42 @@ const requestEmailVerification = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Email Verify Request",
+             subject: "Verify Your Email Address",
             html: `
-               <h2>Email Verification</h2>
-          <p>Apna email verify karo taaki tum blog post, comment
-          aur subscribe kar sako.</p>
-          
-            href="${verifyURL}"
-          >
-            Verify Email
-          </a>
-          <p>Ye link 24 hours mein expire hoga.</p>
-        `,
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Email Verification</h2>
+
+            <p>
+                Thank you for registering on JournalPress.
+                Please verify your email address to access all features,
+                including publishing blogs, commenting, and subscriptions.
+            </p>
+
+            <a
+                href="${verifyURL}"
+                style="
+                    display: inline-block;
+                    padding: 10px 18px;
+                    background-color: #111827;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    margin-bottom: 10px;
+                "
+            >
+                Verify Email
+            </a>
+
+            <p>
+                This verification link will expire in 24 hours.
+            </p>
+
+            <p>
+                If you did not create this account, you can safely ignore this email.
+            </p>
+        </div>
+    `,
         });
     } catch (emailError) {
         // Email fail — DB clean
@@ -444,18 +497,42 @@ const changeEmailRequest = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Email Verify Request",
+            subject: "Verify Your Email Address",
             html: `
-               <h2>Email Verification</h2>
-          <p>Apna email verify karo taaki tum blog post, comment
-          aur subscribe kar sako.</p>
-          
-            href="${verifyURL}"
-          >
-            Verify Email
-          </a>
-          <p>Ye link 24 hours mein expire hoga.</p>
-        `,
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Email Verification</h2>
+
+            <p>
+                Thank you for registering on JournalPress.
+                Please verify your email address to access all features,
+                including publishing blogs, commenting, and subscriptions.
+            </p>
+
+            <a
+                href="${verifyURL}"
+                style="
+                    display: inline-block;
+                    padding: 10px 18px;
+                    background-color: #111827;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    margin-bottom: 10px;
+                "
+            >
+                Verify Email
+            </a>
+
+            <p>
+                This verification link will expire in 24 hours.
+            </p>
+
+            <p>
+                If you did not create this account, you can safely ignore this email.
+            </p>
+        </div>
+    `,
         });
     } catch (emailError) {
         // Email fail — DB clean

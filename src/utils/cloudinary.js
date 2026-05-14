@@ -34,11 +34,31 @@ const uploadOnCloudinary = async (localFilePath) => {
         }
     }
 };
+// delete cloudinary images
+
+const deleteFromCloudinary = async (public_id) => {
+    try {
+        if (!public_id) return null;
+
+        const result = await cloudinary.uploader.destroy(
+            public_id
+        );
+
+        return result;
+    } catch (error) {
+        console.log(
+            "Cloudinary delete error:",
+            error
+        );
+        return null;
+    }
+};
+
+export default deleteFromCloudinary;
 
 // Todo
 // add file size validation
 // mime type validation
 // upload timeout handling
-// delete old cloudinary images
 
-export { uploadOnCloudinary };
+export { uploadOnCloudinary, deleteFromCloudinary };

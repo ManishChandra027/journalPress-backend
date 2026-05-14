@@ -24,7 +24,16 @@ const userSchema = new Schema(
 
         password: { type: String, required: [true, "Password is required"] },
 
-        avatar: { type: String, default: "" }, //url
+        avatar: {
+            url: {
+                type: String,
+                default: "",
+            },
+            public_id: {
+                type: String,
+                default: "",
+            },
+        },
 
         bio: { type: String, default: "" },
 
@@ -35,10 +44,9 @@ const userSchema = new Schema(
         refreshToken: { type: String },
         passwordResetToken: { type: String }, // hashed token store hoga
         passwordResetExpires: { type: Date }, // expiry
-        
-        emailVerificationToken: { type: String },// hashed token store hoga
-        emailVerificationExpires: { type: Date },// expiry
-        
+
+        emailVerificationToken: { type: String }, // hashed token store hoga
+        emailVerificationExpires: { type: Date }, // expiry
 
         // ai feature  for future
         aiPreferences: {

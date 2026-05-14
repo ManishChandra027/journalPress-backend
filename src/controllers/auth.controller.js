@@ -43,30 +43,42 @@ const registerUser = asyncHandler(async (req, res) => {
     }
     //check user already in db
     const normalizedEmail = email.toLowerCase().trim();
+    const normalizedUsername = username.toLowerCase().trim();
+    const normalizedFullName = fullName.trim();
+
     const isUserExist = await User.findOne({
-        $or: [{ normalizedEmail }, { username }],
+        $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
     if (isUserExist) {
         throw new ApiError(409, "User with email or username already exist");
     }
     //check avatar
     const avatarLocalPath = req.file?.path;
-    let avatarUrl = "";
+
+    let avatarData = null;
     if (avatarLocalPath) {
-        const avatar = await uploadOnCloudinary(avatarLocalPath);
-        if (!avatar)
-            throw new ApiError(400, "error during uplode on Cloudinary");
-        avatarUrl = avatar.url;
+        avatarData = await uploadOnCloudinary(avatarLocalPath);
+        if (!avatarData?.url || !avatarData?.public_id)
+            throw new ApiError(400, "error during uploade on Cloudinary");
     }
-    //save data in db
-    const user = await User.create({
-        fullName,
-        username: username.toLowerCase(),
-        normalizedEmail,
+    const userData = {
+        fullName: normalizedFullName,
+        username: normalizedUsername,
+        email: normalizedEmail,
         password,
-        bio,
-        avatar: avatarUrl,
-    });
+    };
+
+    if (avatarData) {
+        userData.avatar = {
+            url: avatarData.url,
+            public_id: avatarData.public_id,
+        };
+    }
+    if (bio) {
+        userData.bio = bio.trim();
+    }
+
+    const user = await User.create(userData);
     //generate tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id
@@ -75,7 +87,7 @@ const registerUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     );
     if (!registeredUser)
-        throw new ApiError(401, "User not registred ,somthing wrong");
+        throw new ApiError(500, "User not registred ,somthing wrong");
 
     //retuen user
     res.status(201)
@@ -91,43 +103,66 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    //get data from user
+    // get data from user
     const { username, email, password } = req.body;
-    //validate data
+
+    // validate data
     if (!username && !email) {
-        throw new ApiError(400, "username or email fields are required");
+        throw new ApiError(400, "Username or email is required");
     }
-    if (!password) throw new ApiError(400, "password is required");
-    //check user already in db
+
+    if (!password || password.trim() === "") {
+        throw new ApiError(400, "Password is required");
+    }
+
+    // normalize credentials
     const normalizedEmail = email?.toLowerCase().trim();
+
+    const normalizedUsername = username?.toLowerCase().trim();
+
+    // check user in DB
     const user = await User.findOne({
-        $or: [{ email: normalizedEmail }, { username }],
-    });
+        $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
+    })
+
     if (!user) {
-        throw new ApiError(409, "User does't exist ,plz regestired first");
+        throw new ApiError(401, "Invalid credentials");
     }
-    //check pass
+
+    // check password
     const isPassValid = await user.isPasswordValid(password);
-    if (!isPassValid) throw new ApiError(401, "Password does not correct");
-    //generate tokens
+
+    if (!isPassValid) {
+        throw new ApiError(401, "Invalid credentials");
+    }
+
+    // generate tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id
     );
+
+    // get sanitized user
     const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
-    if (!loggedInUser)
-        throw new ApiError(401, "User not login ,somthing wrong");
 
-    //retuen user
-    res.status(201)
+    if (!loggedInUser) {
+        throw new ApiError(500, "Failed to login user");
+    }
+
+    // return response
+    return res
+        .status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
-                201,
-                { user: loggedInUser, accessToken },
-                "User Login Successfully"
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                },
+                "User logged in successfully"
             )
         );
 });

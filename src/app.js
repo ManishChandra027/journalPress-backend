@@ -22,7 +22,7 @@ app.use(cookieParser());
 // http://localhost:8000/api/v1/auth/
 app.use("/api/v1/auth", authRoutes);
 // http://localhost:8000/api/v1/user/
-// app.use("/api/v1/user",userRoutes);
+app.use("/api/v1/users",userRoutes);
 
 
 export default app;

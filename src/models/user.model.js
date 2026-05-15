@@ -53,14 +53,7 @@ const userSchema = new Schema(
         emailVerificationExpires: { type: Date, select: false }, // expiry
 
         // ai feature  for future
-        aiPreferences: {
-            type: {
-                preferredTone: String, // "formal", "casual", "technical"
-                topics: [String],
-            },
-            default: null,
-            select: false, //bad ma true karna hai jab ai features implement karna hai
-        },
+        
     },
     { timestamps: true }
 );

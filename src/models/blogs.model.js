@@ -13,7 +13,6 @@ const blogSchema = new Schema(
 
         slug: {
             type: String,
-            unique: true,
             lowercase: true,
             trim: true,
             maxlength: 100,
@@ -46,19 +45,43 @@ const blogSchema = new Schema(
 
         category: {
             type: String,
+            enum: [
+                "technology",
+                "lifestyle",
+                "travel",
+                "food",
+                "education",
+                "health",
+                "business",
+                "entertainment",
+                "sports",
+                "general",
+            ],
             required: true,
             lowercase: true,
             trim: true,
             default: "general",
         },
 
-        tags: [
-            {
-                type: String,
-                lowercase: true,
-                trim: true,
+        tags: {
+            type: [
+                {
+                    type: String,
+                    lowercase: true,
+                    trim: true,
+                    maxlength: 30,
+                },
+            ],
+
+            validate: {
+                validator: function (tags) {
+                    return tags.length <= 5;
+                },
+                message: "Maximum 5 tags allowed",
             },
-        ],
+
+            default: [],
+        },
 
         author: {
             type: Schema.Types.ObjectId,
@@ -97,6 +120,10 @@ const blogSchema = new Schema(
         isDeleted: {
             type: Boolean,
             default: false,
+        },
+        deletedAt: {
+            type: Date,
+            default: null,
         },
     },
     {
@@ -141,7 +168,7 @@ blogSchema.pre("save", async function () {
         while (
             await mongoose.models.Blog.exists({
                 slug,
-                _id: { $ne: this._id },//for update blog when title is not changed then slug will also be same so we have to exclude current blog id
+                _id: { $ne: this._id }, //for update blog when title is not changed then slug will also be same so we have to exclude current blog id
             })
         ) {
             slug = `${baseSlug}-${counter}`;
@@ -164,10 +191,8 @@ blogSchema.pre("save", async function () {
         this.status === "published" &&
         !this.publishedAt
     ) {
-        this.publishedAt = new Date();//update date when blog is published or draft to published 
+        this.publishedAt = new Date(); //update date when blog is published or draft to published
     }
-
-    
 });
 
 /* ---------------- MODEL ---------------- */

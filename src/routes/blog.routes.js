@@ -16,6 +16,12 @@ import {
     updateBlogStatus,
 } from "../controllers/blog.controller.js";
 import { upload } from "../middlewares/multer.middlewares.js";
+import {
+    addComment,
+    deleteComment,
+    getBlogComments,
+    updateComment,
+} from "../controllers/comment.controller.js";
 
 //TODO add tags on routes
 const router = Router();
@@ -43,5 +49,10 @@ router.route("/:id/status").patch(verifyJwt, updateBlogStatus);
 // --------------like,bookmark,view-----------------
 router.route("/:id/like").post(verifyJwt, toggleLikeBlog);
 router.route("/:id/bookmark").post(verifyJwt, toggleBookmarkBlog);
+
+// --------------Comments-----------------
+
+router.route("/:blogId/comments").get(getBlogComments).post(addComment);
+router.route("/:blogId/comments/:commentId").patch(upda).delete(deleteComment);
 
 export default router;

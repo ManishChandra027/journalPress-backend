@@ -27,6 +27,7 @@ app.use("/api/v1/users",userRoutes);
 // http://localhost:8000/api/v1/blogs/
 app.use("/api/v1/blogs",blogRoutes);
 // http://localhost:8000/api/v1/blogs/comment
+// app.use("/api/v1/blogs/comment",commentRoutes);
 
 
 export default app;

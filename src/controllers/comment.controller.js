@@ -1,10 +1,11 @@
-import Comment from "../models/comment.model";
-import ApiError from "../utils/ApiError";
-import ApiResponse from "../utils/ApiResponse";
-import asyncHandler from "../utils/asyncHandler";
+import Blog from "../models/blogs.model.js";
+import Comment from "../models/comment.model.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const addComment = asyncHandler(async (req, res) => {
-    const { id: blogId } = req.params;
+    const {blogId } = req.params;
 
     let { comment } = req.body;
 
@@ -45,7 +46,7 @@ const addComment = asyncHandler(async (req, res) => {
     );
 });
 const getBlogComments = asyncHandler(async (req, res) => {
-    const { id: blogId } = req.params;
+    const {blogId } = req.params;
 
     // validation
     if (!blogId) {
@@ -77,7 +78,7 @@ const getBlogComments = asyncHandler(async (req, res) => {
     );
 });
 const updateComment = asyncHandler(async (req, res) => {
-    const { id: commentId } = req.params;
+    const { commentId } = req.params;
 
     let { comment } = req.body;
 
@@ -119,7 +120,7 @@ const updateComment = asyncHandler(async (req, res) => {
     );
 });
 const deleteComment = asyncHandler(async (req, res) => {
-    const { id: commentId } = req.params;
+    const { commentId } = req.params;
 
     const user = req.user;
 

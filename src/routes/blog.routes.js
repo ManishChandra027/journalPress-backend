@@ -52,7 +52,7 @@ router.route("/:id/bookmark").post(verifyJwt, toggleBookmarkBlog);
 
 // --------------Comments-----------------
 
-router.route("/:blogId/comments").get(getBlogComments).post(addComment);
-router.route("/:blogId/comments/:commentId").patch(upda).delete(deleteComment);
+router.route("/:blogId/comments").get(getBlogComments).post(verifyJwt,addComment);
+router.route("/:blogId/comments/:commentId").patch(verifyJwt,updateComment).delete(verifyJwt,deleteComment);
 
 export default router;

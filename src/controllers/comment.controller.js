@@ -1,25 +1,17 @@
-import Comment from "../models/comment.model";
-import ApiError from "../utils/ApiError";
-import ApiResponse from "../utils/ApiResponse";
-import asyncHandler from "../utils/asyncHandler";
+import Comment from "../models/comment.model.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const addComment = asyncHandler(async (req, res) => {
-    const { id: blogId } = req.params;
+    const { blogId } = req.params;
 
     let { comment } = req.body;
 
     const user = req.user;
 
-    // validation
     if (!blogId) {
         throw new ApiError(400, "Blog id is required");
-    }
-
-    // normalize
-    comment = comment?.trim();
-
-    if (!comment) {
-        throw new ApiError(400, "Comment content is required");
     }
 
     // check blog exists
@@ -45,9 +37,8 @@ const addComment = asyncHandler(async (req, res) => {
     );
 });
 const getBlogComments = asyncHandler(async (req, res) => {
-    const { id: blogId } = req.params;
+    const { blogId } = req.params;
 
-    // validation
     if (!blogId) {
         throw new ApiError(400, "Blog id is required");
     }
@@ -63,7 +54,6 @@ const getBlogComments = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Blog not found");
     }
 
-    // get comments
     const comments = await Comment.find({
         blog: blogId,
     })
@@ -77,22 +67,14 @@ const getBlogComments = asyncHandler(async (req, res) => {
     );
 });
 const updateComment = asyncHandler(async (req, res) => {
-    const { id: commentId } = req.params;
+    const { commentId } = req.params;
 
     let { comment } = req.body;
 
     const user = req.user;
 
-    // validation
     if (!commentId) {
         throw new ApiError(400, "Comment id is required");
-    }
-
-    // normalize
-    comment = comment?.trim();
-
-    if (!comment) {
-        throw new ApiError(400, "Comment content is required");
     }
 
     // find comment
@@ -119,7 +101,7 @@ const updateComment = asyncHandler(async (req, res) => {
     );
 });
 const deleteComment = asyncHandler(async (req, res) => {
-    const { id: commentId } = req.params;
+    const { commentId } = req.params;
 
     const user = req.user;
 

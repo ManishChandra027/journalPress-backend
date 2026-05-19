@@ -1,0 +1,97 @@
+import Joi from "joi";
+
+const BLOG_CATEGORIES = [
+    "technology",
+    "lifestyle",
+    "travel",
+    "food",
+    "education",
+    "health",
+    "business",
+    "entertainment",
+    "sports",
+    "general",
+];
+
+const BLOG_STATUS = ["draft", "published"];
+
+export const createBlogSchema = Joi.object({
+    title: Joi.string().trim().min(5).max(100).required(),
+
+    content: Joi.string().trim().min(10).required(),
+
+    excerpt: Joi.string().trim().min(5).max(300).optional(),
+
+    category: Joi.string()
+        .trim()
+        .lowercase()
+        .valid(...BLOG_CATEGORIES)
+        .optional(),
+
+    status: Joi.string()
+        .trim()
+        .lowercase()
+        .valid(...BLOG_STATUS)
+        .optional(),
+
+    tags: Joi.array()
+        .items(Joi.string().trim().lowercase().min(1).max(30))
+        .max(10)
+        .optional(),
+});
+
+export const updateBlogSchema = Joi.object({
+    title: Joi.string().trim().min(10).max(100),
+
+    content: Joi.string().trim().min(10),
+
+    excerpt: Joi.string().trim().min(5).max(300),
+
+    category: Joi.string()
+        .trim()
+        .lowercase()
+        .valid(...BLOG_CATEGORIES),
+
+    status: Joi.string()
+        .trim()
+        .lowercase()
+        .valid(...BLOG_STATUS),
+
+    tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(30)),
+}).min(1);
+
+export const blogQuerySchema = Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+
+    limit: Joi.number().integer().min(1).max(50).default(10),
+
+    category: Joi.string()
+        .trim()
+        .lowercase()
+        .valid(...BLOG_CATEGORIES)
+        .optional(),
+
+    search: Joi.string().trim().lowercase().optional(),
+
+    sort: Joi.string()
+        .trim()
+        .lowercase()
+        .valid("latest", "oldest", "popular")
+        .default("latest"),
+});
+export const slugParamSchema = Joi.object({
+    slug: Joi.string()
+        .trim()
+        .lowercase()
+        .min(3)
+        .max(80)
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+        .required(),
+});
+
+export const statusBodySchema=Joi.object({
+    status:Joi.string().lowercase().trim().valid("draft", "published")
+})
+// updateBlogStatusSchema
+// mongoIdParamSchema
+// slugParamSchema

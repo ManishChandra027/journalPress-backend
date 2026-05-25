@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-const addComment = asyncHandler(async (req, res) => {
+const addComments = asyncHandler(async (req, res) => {
     const { blogId } = req.params;
 
     let { comment } = req.body;
@@ -131,4 +131,4 @@ const deleteComment = asyncHandler(async (req, res) => {
     );
 });
 
-export { addComment, getBlogComments, updateComment, deleteComment };
+export { addComments, getBlogComments, updateComment, deleteComment };

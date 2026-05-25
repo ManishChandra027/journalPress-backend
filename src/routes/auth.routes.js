@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     changeEmailRequest,
     forgotPassword,
+    getCurrentUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
@@ -25,6 +26,8 @@ import {
 
 const router = Router();
 
+router.route("/me").get(verifyJwt, getCurrentUser);
+
 router
     .route("/register")
     .post(upload.single("avatar"), validate(registerSchema), registerUser);
@@ -34,8 +37,8 @@ router.route("/login").post(validate(loginSchema), loginUser);
 router.route("/forgot-password").post(forgotPassword);
 
 router
-.route("/reset-password/:token")
-.post(validate(resetPasswordSchema), resetPassword);
+    .route("/reset-password/:token")
+    .post(validate(resetPasswordSchema), resetPassword);
 
 //secured routes
 router.route("/logout").post(verifyJwt, logoutUser);

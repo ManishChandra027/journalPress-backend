@@ -16,7 +16,7 @@ import {
 } from "../controllers/blog.controller.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import {
-    addComment,
+    addComments,
     deleteComment,
     getBlogComments,
     updateComment,
@@ -83,7 +83,7 @@ router.route("/:blogId/bookmark").post(verifyJwt, toggleBookmarkBlog);
 router
     .route("/:blogId/comments")
     .get(getBlogComments)
-    .post(verifyJwt, validate(commentSchema), addComment);
+    .post(verifyJwt, validate(commentSchema), addComments);
 
 router.route("/slug/:slug").get(validate(slugParamSchema, "params"), getBlogBySlug);
 

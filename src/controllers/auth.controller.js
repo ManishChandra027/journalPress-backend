@@ -412,7 +412,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const changeEmailRequest = asyncHandler(async (req, res) => {
-    
     const { newEmail } = req.body;
 
     if (!newEmail) {
@@ -520,6 +519,14 @@ const changeEmailRequest = asyncHandler(async (req, res) => {
         );
 });
 
+const getCurrentUser = asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Current user fetched successfully"));
+});
+
 export {
     registerUser,
     loginUser,
@@ -531,4 +538,5 @@ export {
     requestEmailVerification,
     verifyEmail,
     changeEmailRequest,
+    getCurrentUser,
 };

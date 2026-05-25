@@ -23,11 +23,7 @@ app.use("/api/v1/auth", authRoutes);
 // http://localhost:8000/api/v1/users/
 app.use("/api/v1/users", userRoutes);
 // http://localhost:8000/api/v1/blogs/
-<<<<<<< HEAD
-app.use("/api/v1/blogs",blogRoutes);
-=======
 app.use("/api/v1/blogs", blogRoutes);
->>>>>>> testing
 
 app.use(errorHandler);
 

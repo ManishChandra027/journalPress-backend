@@ -606,7 +606,7 @@ export {
     updateBlog,
     softDeleteBlog,
     softDeleteAllBlogs,
-    restoreAllBlog,
+    restoreAllBlogs,
     restoreBlog,
     toggleLikeBlog,
     toggleBookmarkBlog,

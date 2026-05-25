@@ -5,11 +5,9 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
+import errorHandler from "./middlewares/error.middleware.js";
 const app = express();
-//app.set
-
-// app.use
-
+//TODO console.log()-->console.error() 
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN,
@@ -23,9 +21,14 @@ app.use(cookieParser());
 // http://localhost:8000/api/v1/auth/
 app.use("/api/v1/auth", authRoutes);
 // http://localhost:8000/api/v1/users/
-app.use("/api/v1/users",userRoutes);
+app.use("/api/v1/users", userRoutes);
 // http://localhost:8000/api/v1/blogs/
+<<<<<<< HEAD
 app.use("/api/v1/blogs",blogRoutes);
+=======
+app.use("/api/v1/blogs", blogRoutes);
+>>>>>>> testing
 
+app.use(errorHandler);
 
 export default app;

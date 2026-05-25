@@ -31,28 +31,15 @@ const options = {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-    //get data from user
     const { username, email, password, fullName, bio } = req.body;
-    //validate data
-    if (
-        [fullName, email, username, password].some(
-            (field) => !field || field.trim() === ""
-        )
-    ) {
-        throw new ApiError(400, "all fields are required");
-    }
-    //check user already in db
-    const normalizedEmail = email.toLowerCase().trim();
-    const normalizedUsername = username.toLowerCase().trim();
-    const normalizedFullName = fullName.trim();
 
     const isUserExist = await User.findOne({
-        $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
+        $or: [{ email }, { username }],
     });
     if (isUserExist) {
         throw new ApiError(409, "User with email or username already exist");
     }
-    //check avatar
+
     const avatarLocalPath = req.file?.path;
 
     let avatarData = null;
@@ -62,9 +49,9 @@ const registerUser = asyncHandler(async (req, res) => {
             throw new ApiError(400, "error during uploade on Cloudinary");
     }
     const userData = {
-        fullName: normalizedFullName,
-        username: normalizedUsername,
-        email: normalizedEmail,
+        fullName,
+        username,
+        email,
         password,
     };
 
@@ -75,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
         };
     }
     if (bio) {
-        userData.bio = bio.trim();
+        userData.bio = bio;
     }
 
     const user = await User.create(userData);
@@ -87,7 +74,6 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!registeredUser)
         throw new ApiError(500, "User not registred ,somthing wrong");
 
-    //retuen user
     res.status(201)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
@@ -101,33 +87,18 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    // get data from user
     const { username, email, password } = req.body;
-
-    // validate data
-    if (!username && !email) {
-        throw new ApiError(400, "Username or email is required");
-    }
-
-    if (!password || password.trim() === "") {
-        throw new ApiError(400, "Password is required");
-    }
-
-    // normalize credentials
-    const normalizedEmail = email?.toLowerCase().trim();
-
-    const normalizedUsername = username?.toLowerCase().trim();
-
+    if (!username && !email)
+        throw new ApiError(400, "username or email is required");
     // check user in DB
     const user = await User.findOne({
-        $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
+        $or: [{ email }, { username }],
     }).select("+password +refreshToken");
 
     if (!user) {
         throw new ApiError(401, "Invalid credentials");
     }
 
-    // check password
     const isPassValid = await user.isPasswordValid(password);
 
     if (!isPassValid) {
@@ -145,7 +116,6 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to login user");
     }
 
-    // return response
     return res
         .status(200)
         .cookie("accessToken", accessToken, options)
@@ -210,27 +180,23 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const updatePassword = asyncHandler(async (req, res) => {
     //fetch detailed and validations
     const { currendPassword, updatedPassword } = req.body;
-    if (
-        !currendPassword ||
-        !updatedPassword ||
-        currendPassword.trim() === "" ||
-        currendPassword.trim() === "" ||
-        currendPassword.trim() === updatedPassword.trim()
-    )
+    if (currendPassword === updatedPassword)
         throw new ApiError(
             401,
-            "Current password and new password are required and should not be same"
+            "Current password and new password  should not be same"
         );
-    //
 
     // find user in db
-    const user = await User.findById(req.user._id).select("+password +refreshToken" );
+    const user = await User.findById(req.user._id).select(
+        "+password +refreshToken"
+    );
     const isCurrentPasswordValid = await user.isPasswordValid(currendPassword);
     if (!isCurrentPasswordValid)
         throw new ApiError(401, "Current password is incorrect");
-    //save new pass in db
+
     user.password = updatedPassword;
     user.save({ ValidateBeforeSave: false });
+
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Password changed successfully"));
@@ -240,7 +206,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
     if (!email) throw new ApiError(400, "email address is required");
     const user = await User.findOne({ email });
-    // Security: user mile ya na mile, same response
+    // for Security: user mile ya na mile, same response
     if (!user) {
         return res
             .status(200)
@@ -252,9 +218,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
                 )
             );
     }
-    //generate token
+
     const { rawToken, hashedToken } = generateTemporaryToken();
-    //save in db
+
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 30 min
     await user.save({ validateBeforeSave: false });
@@ -264,7 +230,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-             subject: "Verify Your Email Address",
+            subject: "Verify Your Email Address",
             html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2>Email Verification</h2>
@@ -306,7 +272,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         user.passwordResetToken = undefined;
         user.passwordResetExpires = undefined;
         await user.save({ validateBeforeSave: false });
-
+        console.error(emailError);
         throw new ApiError(
             500,
             "Unable to send the email at the moment. Please try again later."
@@ -325,7 +291,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-    //get token
     const { token } = req.params;
     const { newPassword } = req.body;
     if (!token || !newPassword)
@@ -366,7 +331,7 @@ const requestEmailVerification = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-             subject: "Verify Your Email Address",
+            subject: "Verify Your Email Address",
             html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2>Email Verification</h2>
@@ -447,14 +412,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const changeEmailRequest = asyncHandler(async (req, res) => {
+    
     const { newEmail } = req.body;
 
-    // validate email
     if (!newEmail) {
         throw new ApiError(400, "New email is required");
     }
-
-    const normalizedEmail = newEmail.toLowerCase().trim();
 
     const user = await User.findById(req.user._id);
 
@@ -467,20 +430,20 @@ const changeEmailRequest = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Verified users cannot change email");
     }
 
-    if (user.email.toLowerCase() === normalizedEmail) {
+    if (user.email.toLowerCase() === newEmail) {
         throw new ApiError(400, "New email cannot be same as current email");
     }
 
     // check email already exists
     const isEmailExist = await User.findOne({
-        email: normalizedEmail,
+        email: newEmail,
     });
 
     if (isEmailExist) {
         throw new ApiError(400, "This email is already in use");
     }
 
-    user.email = normalizedEmail;
+    user.email = newEmail;
 
     // mark as unverified again
     user.isVerified = false;

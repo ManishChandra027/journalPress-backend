@@ -15,8 +15,7 @@ const likeSchema = new Schema(
     },
     { timestamps: true }
 );
-//for fetching comments of a blog in descending order
-likeSchema.index({ blog: 1, createdAt: -1 });
+
 
 const Like = model("Like", likeSchema);
 

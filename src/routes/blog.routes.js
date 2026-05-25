@@ -5,8 +5,7 @@ import {
     getBlogBySlug,
     getMyBlogs,
     getPublishedBlogs,
-    incrementBlogView,
-    restoreAllBlog,
+    restoreAllBlogs,
     restoreBlog,
     softDeleteAllBlogs,
     softDeleteBlog,
@@ -22,37 +21,70 @@ import {
     getBlogComments,
     updateComment,
 } from "../controllers/comment.controller.js";
+import validate from "../middlewares/validate.middleware.js";
+import {
+    blogQuerySchema,
+    createBlogSchema,
+    slugParamSchema,
+    statusBodySchema,
+    updateBlogSchema,
+} from "../validations/blog.validation.js";
+import { commentSchema } from "../validations/comment.validation.js";
+import { requireVerifiedUser } from "../middlewares/requireVerifiedUser.middleware.js";
 
 //TODO add tags on routes
 const router = Router();
+
 router
     .route("/")
-    .get(getPublishedBlogs)
-    .post(verifyJwt, upload.single("coverImage"), createBlog);
+    .get(validate(blogQuerySchema, "query"), getPublishedBlogs)
+    .post(
+        verifyJwt,
+        requireVerifiedUser,
+        upload.single("coverImage"),
+        validate(createBlogSchema),
+        createBlog
+    );
 
 // /blogs/me?status=draft&page=1&sort=latest
-router.route("/me").get(verifyJwt, getMyBlogs); // agar status pass nhi kia to draft+published all
+router
+    .route("/me")
+    .get(verifyJwt, validate(blogQuerySchema, "query"), getMyBlogs); // agar status pass nhi kia to draft+published all
+
+router.route("/me/restore-all").patch(verifyJwt, restoreAllBlogs);
+
+router.route("/me/delete-all").delete(verifyJwt, softDeleteAllBlogs);
 
 router
     .route("/id/:id")
-    .patch(verifyJwt, upload.single("coverImage"), updateBlog)
+    .patch(
+        verifyJwt,
+        upload.single("coverImage"),
+        validate(updateBlogSchema),
+        updateBlog
+    )
     .delete(verifyJwt, softDeleteBlog);
 
 router.route("/me/:id/restore").patch(verifyJwt, restoreBlog);
-router.route("/me/restore-all").patch(verifyJwt, restoreAllBlog);
-router.route("/me/delete-all").delete(verifyJwt, softDeleteAllBlogs);
 
-router.route("/:slug").get(getBlogBySlug);
+router
+    .route("/:id/status")
+    .patch(verifyJwt, validate(statusBodySchema), updateBlogStatus);
 
-router.route("/:id/status").patch(verifyJwt, updateBlogStatus);
+router
+    .route("/:blogId/comments/:commentId")
+    .patch(verifyJwt, validate(commentSchema), updateComment)
+    .delete(verifyJwt, deleteComment);
 
-// --------------like,bookmark,view-----------------
-router.route("/:id/like").post(verifyJwt, toggleLikeBlog);
-router.route("/:id/bookmark").post(verifyJwt, toggleBookmarkBlog);
+router.route("/:blogId/like").post(verifyJwt, toggleLikeBlog);
 
-// --------------Comments-----------------
+router.route("/:blogId/bookmark").post(verifyJwt, toggleBookmarkBlog);
 
-router.route("/:blogId/comments").get(getBlogComments).post(verifyJwt,addComment);
-router.route("/:blogId/comments/:commentId").patch(verifyJwt,updateComment).delete(verifyJwt,deleteComment);
+router
+    .route("/:blogId/comments")
+    .get(getBlogComments)
+    .post(verifyJwt, validate(commentSchema), addComment);
+
+router.route("/slug/:slug").get(validate(slugParamSchema, "params"), getBlogBySlug);
 
 export default router;

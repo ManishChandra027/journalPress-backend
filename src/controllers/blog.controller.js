@@ -10,77 +10,19 @@ import deleteFromCloudinary, {
 } from "../utils/cloudinary.js";
 
 const createBlog = asyncHandler(async (req, res) => {
-    // console.log(req.body)
     let { title, content, excerpt, category, tags, status } = req.body;
     const user = req?.user;
-    if (!user) throw new ApiError(400, "user not found");
-
-    // normalize
-    title = title?.trim();
-    content = content?.trim();
-    excerpt = excerpt?.trim();
-    category = category?.toLowerCase()?.trim();
-    status = status?.toLowerCase()?.trim();
-
-    // required validation
-    if (!title || !content) {
-        throw new ApiError(400, "Title and content are required");
-    }
-
-    // title validation
-    if (title.length < 10 || title.length > 100) {
-        throw new ApiError(400, "Title must be between 10 and 100 characters");
-    }
-
-    // content validation
-    if (content.length < 10) {
-        throw new ApiError(400, "Content is too short");
-    }
-
-    // excerpt validation
-    if (excerpt && excerpt.length < 5) {
-        throw new ApiError(400, "Excerpt is too short");
-    }
-    //status  validation
-    const allowedStatus = ["draft", "published"];
-    if (status && !allowedStatus.includes(status)) {
-        throw new ApiError(400, "Invalid status");
-    }
-
-    // tags validation
-    if (tags && !Array.isArray(tags)) {
-        throw new ApiError(400, "Tags must be an array");
-    }
 
     if (tags) {
-        tags = tags
-            .filter((tag) => typeof tag === "string")
-            .map((tag) => tag.trim().toLowerCase())
-            .filter((tag) => tag.length > 0);
         tags = [...new Set(tags)];
     }
     if (!excerpt) {
         excerpt = content.slice(0, 150);
     }
-    //catergry
-    const allowedCategory = [
-        "technology",
-        "lifestyle",
-        "travel",
-        "food",
-        "education",
-        "health",
-        "business",
-        "entertainment",
-        "sports",
-        "general",
-    ];
-    if (category && !allowedCategory.includes(category)) {
-        throw new ApiError(400, "Invalid category");
-    }
-    //cover image
+
     const coverFile = req?.file;
     let imageData = null;
+
     if (coverFile) {
         const coverImageLocalPath = coverFile?.path;
         imageData = await uploadOnCloudinary(coverImageLocalPath);
@@ -111,20 +53,7 @@ const createBlog = asyncHandler(async (req, res) => {
 });
 
 const getPublishedBlogs = asyncHandler(async (req, res) => {
-    let { page = 1, limit = 10, sort = "latest", category, search } = req.query;
-
-    // normalize
-    page = Number(page);
-    limit = Number(limit);
-    category = category?.toLowerCase()?.trim();
-    search = search?.trim();
-    sort = sort?.toLowerCase().trim();
-
-    // validation
-    if (page < 1 || limit < 1) {
-        throw new ApiError(400, "Invalid page or limit");
-    }
-
+    let { page, limit, sort, category, search } = req.validated.query;
     // base filter
     const filter = {
         status: "published",
@@ -177,16 +106,15 @@ const getPublishedBlogs = asyncHandler(async (req, res) => {
 
     // query
     const blogs = await Blog.find(filter)
+        .select("-__v")
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
-        .populate("author", "fullname username avatar")
-        .select("-__v");
+        .populate("author", "fullname username avatar");
 
     // total count
     const totalBlogs = await Blog.countDocuments(filter);
 
-    // response
     res.status(200).json(
         new ApiResponse(
             200,
@@ -203,30 +131,11 @@ const getPublishedBlogs = asyncHandler(async (req, res) => {
         )
     );
 });
+
 // /blogs/me?status=draft&page=1&sort=latest
 const getMyBlogs = asyncHandler(async (req, res) => {
-    let {
-        page = 1,
-        limit = 10,
-        sort = "latest",
-        category,
-        search,
-        status,
-    } = req.query;
+    let { page, limit, sort, category, search, status } = req.validated.query;
     const user = req?.user;
-    if (!user) throw new ApiError(404, "user not found");
-    // normalize
-    page = Number(page);
-    limit = Number(limit);
-    category = category?.toLowerCase()?.trim();
-    search = search?.trim();
-    sort = sort?.toLowerCase().trim();
-    status = status?.toLowerCase().trim();
-
-    // validation
-    if (page < 1 || limit < 1) {
-        throw new ApiError(400, "Invalid page or limit");
-    }
 
     // base filter
     const filter = {
@@ -246,23 +155,8 @@ const getMyBlogs = asyncHandler(async (req, res) => {
             $in: ["draft", "published"],
         };
     }
-    const allowedCategories = [
-        "technology",
-        "lifestyle",
-        "travel",
-        "food",
-        "education",
-        "health",
-        "business",
-        "entertainment",
-        "sports",
-        "general",
-    ];
-    // category filter
+
     if (category) {
-        if (!allowedCategories.includes(category)) {
-            throw new ApiError(400, "Invalid status");
-        }
         filter.category = category;
     }
 
@@ -335,7 +229,7 @@ const getMyBlogs = asyncHandler(async (req, res) => {
 });
 
 const getBlogBySlug = asyncHandler(async (req, res) => {
-    const { slug } = req.params;
+    const { slug } = req.validated.params;
 
     if (!slug) {
         throw new ApiError(400, "Slug is required");
@@ -349,38 +243,29 @@ const getBlogBySlug = asyncHandler(async (req, res) => {
         .populate("author", "fullname username avatar")
         .select("-__v");
 
-        if (!blog) {
-            throw new ApiError(404, "Blog not found");
-        }
-        await Blog.findByIdAndUpdate(blog._id, {
-            $inc: { views: 1 },
-        });
+    if (!blog) {
+        throw new ApiError(404, "Blog not found");
+    }
+    //update views
+    await Blog.findByIdAndUpdate(blog._id, {
+        $inc: { views: 1 },
+    });
 
     res.status(200).json(
         new ApiResponse(200, blog, "Blog fetched successfully")
     );
 });
+
 const updateBlogStatus = asyncHandler(async (req, res) => {
     let { status } = req.body;
     const { id } = req.params;
     const user = req.user;
 
-    // normalize
-    status = status?.toLowerCase()?.trim();
-
-    // validation
-    if (!status || !id) {
-        throw new ApiError(400, "Status and blog id are required");
-    }
-
-    const allowedStatus = ["draft", "published"];
-
-    if (!allowedStatus.includes(status)) {
-        throw new ApiError(400, "Invalid status");
+    if (!id) {
+        throw new ApiError(400, "blog id are required");
     }
 
     // find blog
-
     const blog = await Blog.findById(id);
     if (!blog || blog.isDeleted) {
         throw new ApiError(404, "Blog not found");
@@ -392,7 +277,6 @@ const updateBlogStatus = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Unauthorized user");
     }
 
-    // update status
     blog.status = status;
 
     // update publishedAt
@@ -402,12 +286,10 @@ const updateBlogStatus = asyncHandler(async (req, res) => {
         blog.publishedAt = null;
     }
 
-    // save
     await blog.save({
         validateBeforeSave: false,
     });
 
-    // response
     res.status(200).json(
         new ApiResponse(200, blog, "Blog status updated successfully")
     );
@@ -417,7 +299,7 @@ const softDeleteBlog = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const user = req.user;
     if (!id) throw new ApiError(400, "id is required");
-    //get blog
+
     const blog = await Blog.findOne({
         _id: id,
         isDeleted: false,
@@ -441,6 +323,7 @@ const softDeleteBlog = asyncHandler(async (req, res) => {
         new ApiResponse(200, blog, "Blog softDelete  successfully")
     );
 });
+
 const softDeleteAllBlogs = asyncHandler(async (req, res) => {
     const user = req.user;
 
@@ -508,7 +391,8 @@ const restoreBlog = asyncHandler(async (req, res) => {
         new ApiResponse(200, blog, "Blog restored successfully")
     );
 });
-const restoreAllBlog = asyncHandler(async (req, res) => {
+
+const restoreAllBlogs = asyncHandler(async (req, res) => {
     const user = req.user;
 
     // get deleted blog
@@ -545,79 +429,24 @@ const updateBlog = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Blog id is required");
     }
 
-    // get old blog
     const oldBlog = await Blog.findById(id);
 
     if (!oldBlog || oldBlog.isDeleted) {
         throw new ApiError(404, "Blog not found");
     }
 
-    // authorization
     if (!oldBlog.author.equals(user._id)) {
         throw new ApiError(403, "Unauthorized user");
     }
 
-    // normalize
-    title = title?.trim();
-    content = content?.trim();
-    excerpt = excerpt?.trim();
-    category = category?.toLowerCase()?.trim();
-
-    // validation
-    if (!title || !content) {
-        throw new ApiError(400, "Title and content are required");
-    }
-
-    if (title.length < 10 || title.length > 100) {
-        throw new ApiError(400, "Title must be between 10 and 100 characters");
-    }
-
-    if (content.length < 10) {
-        throw new ApiError(400, "Content is too short");
-    }
-
-    if (excerpt && excerpt.length < 5) {
-        throw new ApiError(400, "Excerpt is too short");
-    }
-
-    // category validation
-    const allowedCategory = [
-        "technology",
-        "lifestyle",
-        "travel",
-        "food",
-        "education",
-        "health",
-        "business",
-        "entertainment",
-        "sports",
-        "general",
-    ];
-
-    if (category && !allowedCategory.includes(category)) {
-        throw new ApiError(400, "Invalid category");
-    }
-
-    // tags validation
-    if (tags && !Array.isArray(tags)) {
-        throw new ApiError(400, "Tags must be an array");
-    }
-
     if (tags) {
-        tags = tags
-            .filter((tag) => typeof tag === "string")
-            .map((tag) => tag.trim().toLowerCase())
-            .filter((tag) => tag.length > 0);
-
         tags = [...new Set(tags)];
     }
 
-    // auto excerpt
-    if (!excerpt) {
+    if (excerpt) {
         excerpt = content.slice(0, 150);
     }
 
-    // upload new cover image
     const coverFile = req.file;
     let imageData = null;
 
@@ -631,17 +460,14 @@ const updateBlog = asyncHandler(async (req, res) => {
         }
     }
 
-    // store old image id
     const oldPublicId = oldBlog?.coverImage?.public_id;
 
-    // update fields
     oldBlog.title = title;
     oldBlog.content = content;
     oldBlog.excerpt = excerpt;
     oldBlog.category = category;
     oldBlog.tags = tags;
 
-    // update image
     if (imageData) {
         oldBlog.coverImage = {
             url: imageData.url,
@@ -649,12 +475,11 @@ const updateBlog = asyncHandler(async (req, res) => {
         };
     }
 
-    // save updated blog
     await oldBlog.save({
         validateBeforeSave: false,
     });
 
-    // delete old image after successful save
+    // delete old image only after successful DB save
     if (imageData && oldPublicId) {
         await deleteFromCloudinary(oldPublicId);
     }
@@ -663,12 +488,12 @@ const updateBlog = asyncHandler(async (req, res) => {
         new ApiResponse(200, oldBlog, "Blog updated successfully")
     );
 });
-//-----------------Like-----------------
+
+//-----------------Like,Bookmark-----------------
 const toggleLikeBlog = asyncHandler(async (req, res) => {
     const user = req.user;
-    const { id: blogId } = req.params;
+    const { blogId } = req.params;
 
-    // validation
     if (!blogId) {
         throw new ApiError(400, "Blog id is required");
     }
@@ -723,11 +548,11 @@ const toggleLikeBlog = asyncHandler(async (req, res) => {
 
     res.status(200).json(new ApiResponse(200, like, "Blog liked successfully"));
 });
+
 const toggleBookmarkBlog = asyncHandler(async (req, res) => {
     const user = req.user;
-    const { id: blogId } = req.params;
+    const { blogId } = req.params;
 
-    // validation
     if (!blogId) {
         throw new ApiError(400, "Blog id is required");
     }
@@ -771,7 +596,7 @@ const toggleBookmarkBlog = asyncHandler(async (req, res) => {
         new ApiResponse(200, bookmark, "Blog bookmark successfully")
     );
 });
-const incrementBlogView = asyncHandler(async (req, res) => {});
+
 export {
     createBlog,
     getPublishedBlogs,
@@ -785,5 +610,4 @@ export {
     restoreBlog,
     toggleLikeBlog,
     toggleBookmarkBlog,
-    incrementBlogView,
 };

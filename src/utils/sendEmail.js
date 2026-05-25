@@ -19,8 +19,8 @@ const sendEmail = async ({ to, subject, html }) => {
             html,
         });
     } catch (error) {
+        console.error(error);
         throw new ApiError(500, "error during send mail");
-        console.log(error);
     }
 };
 

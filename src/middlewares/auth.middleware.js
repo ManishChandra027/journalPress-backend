@@ -10,10 +10,22 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
         null;
     // or req.header("Authorization")?.startsWith("Bearer ")
     if (!token) throw new ApiError(401, "Access token is required");
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    if (!decodedToken) throw new ApiError(401, "Invalid access token");
+
+    let decodedToken;
+
+    try {
+        decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    } catch (error) {
+        throw new ApiError(401, "Invalid or expired access token");
+    }
+
+    if (!decodedToken?._id) {
+    throw new ApiError(401, "Invalid access token payload");
+}
+
     const user = await User.findById(decodedToken._id);
-    if (!user) throw new ApiError(401, "Invalid access token");
+    if (!user) throw new ApiError(401, "User not found");
+
     req.user = user;
 
     next();
@@ -30,22 +42,28 @@ const optionalVerifyJwt = asyncHandler(async (req, res, next) => {
     }
 
     // verify token
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    try {
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // find user
-    const user = await User.findById(decodedToken?._id).select(
-        "-password -refreshToken"
-    );
+        if (!decodedToken?._id) {
+            return next();
+        }
 
-    // if user deleted but token still exists
-    if (!user) {
-        return next();
+        const user = await User.findById(decodedToken._id).select(
+            "-password -refreshToken"
+        );
+
+        if (!user) {
+            return next();
+        }
+
+        req.user = user;
+    } catch (error) {
+        // ignore invalid token
+        console.log(error.message);
     }
-
-    // attach user to request
-    req.user = user;
 
     next();
 });
 
-export { verifyJwt,optionalVerifyJwt };
+export { verifyJwt, optionalVerifyJwt };

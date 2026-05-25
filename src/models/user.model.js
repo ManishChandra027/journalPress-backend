@@ -46,14 +46,14 @@ const userSchema = new Schema(
         isVerified: { type: Boolean, default: false },
 
         refreshToken: { type: String, select: false },
-        passwordResetToken: { type: String, select: false }, // hashed token store hoga
+
+        passwordResetToken: { type: String, select: false }, // hashed token 
         passwordResetExpires: { type: Date, select: false }, // expiry
 
-        emailVerificationToken: { type: String, select: false }, // hashed token store hoga
-        emailVerificationExpires: { type: Date, select: false }, // expiry
+        emailVerificationToken: { type: String, select: false }, 
+        emailVerificationExpires: { type: Date, select: false }, 
 
         // ai feature  for future
-        
     },
     { timestamps: true }
 );
@@ -66,6 +66,7 @@ userSchema.pre("save", async function () {
 userSchema.methods.isPasswordValid = async function (password) {
     return await bcrypt.compare(password, this.password); //return true/false
 };
+
 userSchema.methods.generateAccessToken = async function () {
     const paylode = {
         _id: this._id,
@@ -77,6 +78,7 @@ userSchema.methods.generateAccessToken = async function () {
         expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
     });
 };
+
 userSchema.methods.generateRefreshToken = async function () {
     return await jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
         expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,

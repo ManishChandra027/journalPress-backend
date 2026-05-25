@@ -18,15 +18,12 @@ const uploadOnCloudinary = async (localFilePath) => {
             resource_type: "auto",
         });
 
-        console.log("File uploaded on Cloudinary successfully");
-
         return {
             url: result.secure_url,
             public_id: result.public_id,
         };
     } catch (error) {
-        console.log("Upload on Cloudinary failed:", error.message);
-
+        console.error("Upload on Cloudinary failed:", error.message);
         throw new Error("Cloudinary upload failed");
     } finally {
         if (localFilePath && fs.existsSync(localFilePath)) {
@@ -34,29 +31,23 @@ const uploadOnCloudinary = async (localFilePath) => {
         }
     }
 };
-// delete cloudinary images
 
 const deleteFromCloudinary = async (public_id) => {
     try {
         if (!public_id) return null;
 
-        const result = await cloudinary.uploader.destroy(
-            public_id
-        );
+        const result = await cloudinary.uploader.destroy(public_id);
 
         return result;
     } catch (error) {
-        console.log(
-            "Cloudinary delete error:",
-            error
-        );
+        console.error("Cloudinary delete error:", error);
         return null;
     }
 };
 
 export default deleteFromCloudinary;
 
-// Todo
+// TODO
 // add file size validation
 // mime type validation
 // upload timeout handling

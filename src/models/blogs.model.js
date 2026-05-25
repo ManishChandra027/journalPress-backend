@@ -7,7 +7,7 @@ const blogSchema = new Schema(
             type: String,
             required: true,
             trim: true,
-            minlength: 3,
+            minlength: 5,
             maxlength: 200,
         },
 
@@ -100,7 +100,6 @@ const blogSchema = new Schema(
         },
 
         readingTime: {
-            //optional
             type: Number,
             default: 1,
         },
@@ -148,7 +147,7 @@ blogSchema.index({ createdAt: -1 });
 // search
 blogSchema.index({
     title: "text",
-    content: "text",
+    excerpt: "text",
 });
 
 /* ---------------- MIDDLEWARE ---------------- */

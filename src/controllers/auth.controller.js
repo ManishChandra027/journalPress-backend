@@ -62,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
         };
     }
     if (bio) {
-        userData.bio = bio.trim();
+        userData.bio = bio;
     }
 
     const user = await User.create(userData);
@@ -193,8 +193,10 @@ const updatePassword = asyncHandler(async (req, res) => {
     const isCurrentPasswordValid = await user.isPasswordValid(currendPassword);
     if (!isCurrentPasswordValid)
         throw new ApiError(401, "Current password is incorrect");
+
     user.password = updatedPassword;
     user.save({ ValidateBeforeSave: false });
+
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Password changed successfully"));
@@ -270,7 +272,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         user.passwordResetToken = undefined;
         user.passwordResetExpires = undefined;
         await user.save({ validateBeforeSave: false });
-
+        console.error(emailError);
         throw new ApiError(
             500,
             "Unable to send the email at the moment. Please try again later."
@@ -288,7 +290,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         );
 });
 
-const resetPassword = asyncHandler(async (req, res) => {``
+const resetPassword = asyncHandler(async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
     if (!token || !newPassword)
@@ -410,6 +412,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const changeEmailRequest = asyncHandler(async (req, res) => {
+    
     const { newEmail } = req.body;
 
     if (!newEmail) {

@@ -12,9 +12,11 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     const user = req.user;
     const [userProfileInfo] = await User.aggregate([
         { $match: { _id: user._id } }, //1st pipeline stage to filter user by username
+
         {
             $lookup: {
                 //2nd stage to lookup followers count
+
                 from: "follows",
                 localField: "_id",
                 foreignField: "following",
@@ -23,20 +25,23 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
+                //3rd stage to lookup following count
                 from: "follows",
                 localField: "_id",
                 foreignField: "follower",
                 as: "following",
             },
-        }, //3rd stage to lookup following count
+        },
         {
             $addFields: {
+                //4th stage to project only required fields and count of followers and following
                 followersCount: { $size: "$followers" },
                 followingCount: { $size: "$following" },
             },
-        }, //4th stage to project only required fields and count of followers and following
+        },
         {
             $project: {
+                //5th stage to remove followers and following array from the result
                 username: 1,
                 fullName: 1,
                 avatar: 1,
@@ -47,7 +52,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
                 email: 1,
                 role: 1,
             },
-        }, //5th stage to remove followers and following array from the result
+        },
     ]);
     res.status(200).json(
         new ApiResponse(
@@ -97,8 +102,8 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         dbUser.bio = bio;
     }
     await dbUser.save();
-    dbUser.password = undefined;
-    dbUser.refreshToken = undefined;
+    // dbUser.password = undefined;
+    // dbUser.refreshToken = undefined;
     res.status(200).json(
         new ApiResponse(200, dbUser, "Account details updated")
     );

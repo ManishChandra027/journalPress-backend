@@ -9,6 +9,6 @@ connectDb()
         });
     })
     .catch((err) => {
-        console.log("mongoose connect failed \n", err);
+        console.error("mongoose connect failed \n", err);
         process.exit(1);
     });

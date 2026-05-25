@@ -18,6 +18,7 @@ const commentSchema = new Schema(
     },
     { timestamps: true }
 );
+
 //for fetching comments of a blog in descending order
 commentSchema.index({ blog: 1, createdAt: -1 });
 

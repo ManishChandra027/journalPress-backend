@@ -20,16 +20,13 @@ const followSchema = new Schema(
 // prevent duplicate follows
 followSchema.index({ follower: 1, following: 1 }, { unique: true });
 
-
 followSchema.index({ following: 1 });
 
 // prevent self-follow
 followSchema.pre("save", function () {
     if (this.follower.equals(this.following)) {
-        return next(new Error("Users cannot follow themselves"));
+        return new Error("Users cannot follow themselves");
     }
-
-    
 });
 
 export const Follow = model("Follow", followSchema);

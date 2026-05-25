@@ -22,6 +22,7 @@ const createBlog = asyncHandler(async (req, res) => {
 
     const coverFile = req?.file;
     let imageData = null;
+
     if (coverFile) {
         const coverImageLocalPath = coverFile?.path;
         imageData = await uploadOnCloudinary(coverImageLocalPath);
@@ -105,11 +106,11 @@ const getPublishedBlogs = asyncHandler(async (req, res) => {
 
     // query
     const blogs = await Blog.find(filter)
+        .select("-__v")
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
-        .populate("author", "fullname username avatar")
-        .select("-__v");
+        .populate("author", "fullname username avatar");
 
     // total count
     const totalBlogs = await Blog.countDocuments(filter);
@@ -245,6 +246,7 @@ const getBlogBySlug = asyncHandler(async (req, res) => {
     if (!blog) {
         throw new ApiError(404, "Blog not found");
     }
+    //update views
     await Blog.findByIdAndUpdate(blog._id, {
         $inc: { views: 1 },
     });
@@ -390,7 +392,7 @@ const restoreBlog = asyncHandler(async (req, res) => {
     );
 });
 
-const restoreAllBlog = asyncHandler(async (req, res) => {
+const restoreAllBlogs = asyncHandler(async (req, res) => {
     const user = req.user;
 
     // get deleted blog
@@ -441,7 +443,7 @@ const updateBlog = asyncHandler(async (req, res) => {
         tags = [...new Set(tags)];
     }
 
-    if (!excerpt) {
+    if (excerpt) {
         excerpt = content.slice(0, 150);
     }
 
@@ -551,7 +553,6 @@ const toggleBookmarkBlog = asyncHandler(async (req, res) => {
     const user = req.user;
     const { blogId } = req.params;
 
-   
     if (!blogId) {
         throw new ApiError(400, "Blog id is required");
     }

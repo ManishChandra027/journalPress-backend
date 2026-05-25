@@ -100,6 +100,7 @@ const updateComment = asyncHandler(async (req, res) => {
         new ApiResponse(200, existingComment, "Comment updated successfully")
     );
 });
+
 const deleteComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
 

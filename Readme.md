@@ -1,0 +1,6 @@
+- features image add logic (hightest views+like+coments)
+- make resuable components
+- fix routes naming ex blog -> posts
+- add defaut profile image in model and coverimage
+- fix status in create post and update post 
+- add status api  in update

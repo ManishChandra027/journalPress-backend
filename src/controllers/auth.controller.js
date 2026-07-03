@@ -179,6 +179,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const updatePassword = asyncHandler(async (req, res) => {
     //fetch detailed and validations
+    
     const { currendPassword, updatedPassword } = req.body;
     if (currendPassword === updatedPassword)
         throw new ApiError(
@@ -230,7 +231,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Verify Your Email Address",
+            subject: "Reset your Password",
             html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2>Email Verification</h2>
@@ -242,7 +243,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
             </p>
 
             <a
-                href="${verifyURL}"
+                href="${resetURL}"
                 style="
                     display: inline-block;
                     padding: 10px 18px;
@@ -254,7 +255,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
                     margin-bottom: 10px;
                 "
             >
-                Verify Email
+                Reset Password
             </a>
 
             <p>

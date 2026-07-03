@@ -58,7 +58,7 @@ export const updateBlogSchema = Joi.object({
         .valid(...BLOG_STATUS),
 
     tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(30)),
-}).min(1);
+});
 
 export const blogQuerySchema = Joi.object({
     page: Joi.number().integer().min(1).default(1),

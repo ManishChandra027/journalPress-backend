@@ -110,7 +110,7 @@ const getPublishedBlogs = asyncHandler(async (req, res) => {
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
-        .populate("author", "fullname username avatar");
+        .populate("author", "fullName username avatar");
 
     // total count
     const totalBlogs = await Blog.countDocuments(filter);
@@ -204,7 +204,7 @@ const getMyBlogs = asyncHandler(async (req, res) => {
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
-        .populate("author", "fullname username avatar")
+        .populate("author", "fullName username avatar")
         .select("-__v");
 
     // total count
@@ -240,7 +240,7 @@ const getBlogBySlug = asyncHandler(async (req, res) => {
         status: "published",
         isDeleted: false,
     })
-        .populate("author", "fullname username avatar")
+        .populate("author", "fullName username avatar")
         .select("-__v");
 
     if (!blog) {
@@ -251,8 +251,21 @@ const getBlogBySlug = asyncHandler(async (req, res) => {
         $inc: { views: 1 },
     });
 
+    let isLiked = false;
+    if (req.user) {
+        const liked = await Like.exists({
+            user: req.user._id,
+            blog: blog._id,
+        });
+
+        isLiked = !!liked;
+    }
+    const blogObj = blog.toObject();    
+  
+    blogObj.isLiked = isLiked;
+
     res.status(200).json(
-        new ApiResponse(200, blog, "Blog fetched successfully")
+        new ApiResponse(200, blogObj, "Blog fetched successfully")
     );
 });
 
@@ -461,12 +474,25 @@ const updateBlog = asyncHandler(async (req, res) => {
     }
 
     const oldPublicId = oldBlog?.coverImage?.public_id;
+    if (title !== undefined) {
+        oldBlog.title = title;
+    }
 
-    oldBlog.title = title;
-    oldBlog.content = content;
-    oldBlog.excerpt = excerpt;
-    oldBlog.category = category;
-    oldBlog.tags = tags;
+    if (content !== undefined) {
+        oldBlog.content = content;
+    }
+
+    if (excerpt !== undefined) {
+        oldBlog.excerpt = excerpt;
+    }
+
+    if (category !== undefined) {
+        oldBlog.category = category;
+    }
+
+    if (tags !== undefined) {
+        oldBlog.tags = tags;
+    }
 
     if (imageData) {
         oldBlog.coverImage = {
@@ -597,6 +623,106 @@ const toggleBookmarkBlog = asyncHandler(async (req, res) => {
     );
 });
 
+const getFeatureBlog = asyncHandler(async (req, res) => {
+    const [blog] = await Blog.aggregate([
+        {
+            $match: {
+                status: "published",
+                isDeleted: false,
+            },
+        },
+
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "blog",
+                as: "comments",
+            },
+        },
+
+        {
+            $addFields: {
+                commentsCount: {
+                    $size: "$comments",
+                },
+            },
+        },
+
+        {
+            $project: {
+                comments: 0,
+                __v: 0,
+            },
+        },
+
+        {
+            $addFields: {
+                score: {
+                    $add: [
+                        { $multiply: ["$likesCount", 3] },
+                        { $multiply: ["$commentsCount", 5] },
+                        { $multiply: ["$views", 0.05] },
+                    ],
+                },
+            },
+        },
+
+        {
+            $sort: {
+                score: -1,
+            },
+        },
+
+        {
+            $limit: 1,
+        },
+
+        {
+            $lookup: {
+                from: "users",
+                localField: "author",
+                foreignField: "_id",
+                as: "author",
+            },
+        },
+
+        {
+            $unwind: "$author", //convert arr to obj
+        },
+
+        {
+            $project: {
+                "author.fullName": 1,
+                "author.username": 1,
+                "author.avatar": 1,
+
+                title: 1,
+                content: 1,
+                coverImage: 1,
+                views: 1,
+                likesCount: 1,
+                commentsCount: 1,
+                score: 1,
+                createdAt: 1,
+                slug: 1,
+                updatedAt: 1,
+                publishedAt: 1,
+                readingTime: 1,
+                excerpt: 1,
+            },
+        },
+    ]);
+
+    if (!blog) {
+        throw new ApiError(404, "No blog found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, blog, "Blog fetched successfully"));
+});
+
 export {
     createBlog,
     getPublishedBlogs,
@@ -610,4 +736,5 @@ export {
     restoreBlog,
     toggleLikeBlog,
     toggleBookmarkBlog,
+    getFeatureBlog,
 };

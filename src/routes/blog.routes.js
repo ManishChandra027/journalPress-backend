@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { optionalVerifyJwt, verifyJwt } from "../middlewares/auth.middleware.js";
 import {
     createBlog,
     getBlogBySlug,
+    getFeatureBlog,
     getMyBlogs,
     getPublishedBlogs,
     restoreAllBlogs,
@@ -85,6 +86,7 @@ router
     .get(getBlogComments)
     .post(verifyJwt, validate(commentSchema), addComments);
 
-router.route("/slug/:slug").get(validate(slugParamSchema, "params"), getBlogBySlug);
+router.route("/slug/:slug").get(optionalVerifyJwt, validate(slugParamSchema, "params"), getBlogBySlug);
 
+router.route("/featured").get(getFeatureBlog)
 export default router;

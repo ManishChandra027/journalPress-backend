@@ -31,7 +31,7 @@ const userSchema = new Schema(
         avatar: {
             url: {
                 type: String,
-                default: "",
+                default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRC8YYH0kk_aRSAOTXUYWErtK4dpViUHJt061CpsHK3Gg&s",
             },
             public_id: {
                 type: String,

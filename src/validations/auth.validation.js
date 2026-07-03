@@ -16,18 +16,18 @@ export const registerSchema = Joi.object({
     password: Joi.string().min(8).max(128).required(),
 });
 export const loginSchema = Joi.object({
-    email: Joi.string().trim().lowercase().email().optional(),
+    email: Joi.string().trim().lowercase().email().allow("").optional(),
 
     username: Joi.string()
         .trim()
         .lowercase()
         .min(3)
         .max(30)
-        .pattern(/^[a-z0-9_]+$/)
+        .pattern(/^[a-z0-9_]+$/).allow("")
         .optional(),
 
     password: Joi.string().required(),
-});
+}).or("username", "email");
 
 export const resetPasswordSchema = Joi.object({
     newPassword: Joi.string().min(8).max(128).required(),

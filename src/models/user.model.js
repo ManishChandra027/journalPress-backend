@@ -31,7 +31,8 @@ const userSchema = new Schema(
         avatar: {
             url: {
                 type: String,
-                default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRC8YYH0kk_aRSAOTXUYWErtK4dpViUHJt061CpsHK3Gg&s",
+                default:
+                    "https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg?nii=t",
             },
             public_id: {
                 type: String,
@@ -47,13 +48,12 @@ const userSchema = new Schema(
 
         refreshToken: { type: String, select: false },
 
-        passwordResetToken: { type: String, select: false }, // hashed token 
+        passwordResetToken: { type: String, select: false }, // hashed token
         passwordResetExpires: { type: Date, select: false }, // expiry
 
-        emailVerificationToken: { type: String, select: false }, 
-        emailVerificationExpires: { type: Date, select: false }, 
+        emailVerificationToken: { type: String, select: false },
+        emailVerificationExpires: { type: Date, select: false },
 
-        // ai feature  for future
     },
     { timestamps: true }
 );

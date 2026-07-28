@@ -10,3 +10,18 @@ const asyncHandler = (fn) => {
 
 export default asyncHandler;
 
+// router.get("/profile", async (req,res,next)=>{
+
+//     try{
+
+//         await getProfile(req,res,next);
+
+//     }
+
+//     catch(err){
+
+//         next(err);
+
+//     }
+
+// });

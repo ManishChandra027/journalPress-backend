@@ -36,18 +36,14 @@ const registerUser = asyncHandler(async (req, res) => {
     const isUserExist = await User.findOne({
         $or: [{ email }, { username }],
     });
+
     if (isUserExist) {
-        throw new ApiError(409, "User with email or username already exist");
+        throw new ApiError(
+            409,
+            "A user with this email or username already exists."
+        );
     }
 
-    const avatarLocalPath = req.file?.path;
-
-    let avatarData = null;
-    if (avatarLocalPath) {
-        avatarData = await uploadOnCloudinary(avatarLocalPath);
-        if (!avatarData?.url || !avatarData?.public_id)
-            throw new ApiError(400, "error during uploade on Cloudinary");
-    }
     const userData = {
         fullName,
         username,
@@ -55,24 +51,20 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
     };
 
-    if (avatarData) {
-        userData.avatar = {
-            url: avatarData.url,
-            public_id: avatarData.public_id,
-        };
-    }
     if (bio) {
         userData.bio = bio;
     }
 
     const user = await User.create(userData);
     //generate tokens
+
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id
     );
+
     const registeredUser = await User.findById(user._id);
     if (!registeredUser)
-        throw new ApiError(500, "User not registred ,somthing wrong");
+        throw new ApiError(500, "Registration failed. Please try again.");
 
     res.status(201)
         .cookie("accessToken", accessToken, options)
@@ -89,7 +81,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
     if (!username && !email)
-        throw new ApiError(400, "username or email is required");
+        throw new ApiError(400, "Username or email is required.");
     // check user in DB
     const user = await User.findOne({
         $or: [{ email }, { username }],
@@ -113,7 +105,7 @@ const loginUser = asyncHandler(async (req, res) => {
     // get sanitized user
     const loggedInUser = await User.findById(user._id);
     if (!loggedInUser) {
-        throw new ApiError(500, "Failed to login user");
+        throw new ApiError(500, "Unable to log in. Please try again.");
     }
 
     return res
@@ -144,26 +136,44 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    //get token from user from cookie or body
+    // 1. Get refresh token from cookie or request body
     const incomingRefreshToken =
-        req.cookies.refreshToken || req.body.refreshToken;
+        req.cookies?.refreshToken || req.body?.refreshToken;
+
     if (!incomingRefreshToken) {
-        throw new ApiError(400, "Refresh token is required");
+        throw new ApiError(401, "Refresh token is required.");
     }
-    //verify from jwt
-    const decodedToken = jwt.verify(
-        incomingRefreshToken,
-        process.env.REFRESH_TOKEN_SECRET
-    );
-    if (!decodedToken) throw new ApiError(401, "Invalid Refresh token");
-    //check in db token is exist or not
+
+    // 2. Verify refresh token
+    let decodedToken;
+
+    try {
+        decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+    } catch (error) {
+        throw new ApiError(401, "Invalid or expired refresh token.");
+    }
+
+    // 3. Find user from token payload
     const user = await User.findById(decodedToken._id);
-    if (!user || user.refreshToken !== incomingRefreshToken)
-        throw new ApiError(401, "Invalid Refresh token");
-    //send new refresh token to user
+
+    if (!user) {
+        throw new ApiError(401, "Invalid refresh token.");
+    }
+
+    // 4. Check whether refresh token matches the token stored in DB
+    if (user.refreshToken !== incomingRefreshToken) {
+        throw new ApiError(401, "Refresh token is expired or already used.");
+    }
+
+    // 5. Generate new access + refresh token
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
         user._id
     );
+
+    // 6. Send new tokens
     return res
         .status(200)
         .cookie("accessToken", accessToken, options)
@@ -171,7 +181,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                { accessToken, refreshToken },
+                {
+                    accessToken,
+                    refreshToken,
+                },
                 "Access token refreshed successfully"
             )
         );
@@ -179,7 +192,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const updatePassword = asyncHandler(async (req, res) => {
     //fetch detailed and validations
-    
+
     const { currendPassword, updatedPassword } = req.body;
     if (currendPassword === updatedPassword)
         throw new ApiError(
@@ -205,7 +218,7 @@ const updatePassword = asyncHandler(async (req, res) => {
 
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
-    if (!email) throw new ApiError(400, "email address is required");
+    if (!email) throw new ApiError(400, "Email address is required.");
     const user = await User.findOne({ email });
     // for Security: user mile ya na mile, same response
     if (!user) {
@@ -215,7 +228,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
                 new ApiResponse(
                     201,
                     null,
-                    "If an account exists, a reset link has been sent."
+                    "A reset link has been sent to your email address."
                 )
             );
     }
@@ -295,7 +308,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
     if (!token || !newPassword)
-        throw new ApiError(400, "Token and new password are required");
+        throw new ApiError(400, "Token and new password are required.");
     //hash token to compare with db token because we save hashed token in db and user send us raw token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     // find user by hashed token with expire
@@ -394,7 +407,7 @@ const requestEmailVerification = asyncHandler(async (req, res) => {
 
 const verifyEmail = asyncHandler(async (req, res) => {
     const { token } = req.params;
-    if (!token) throw new ApiError(400, "Token and new password are required");
+    if (!token) throw new ApiError(400, "Token and new password are required.");
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
@@ -412,113 +425,119 @@ const verifyEmail = asyncHandler(async (req, res) => {
     );
 });
 
-const changeEmailRequest = asyncHandler(async (req, res) => {
-    const { newEmail } = req.body;
+// const changeEmailRequest = asyncHandler(async (req, res) => {
+//     const { newEmail } = req.body;
 
-    if (!newEmail) {
-        throw new ApiError(400, "New email is required");
-    }
+//     if (!newEmail) {
+//         throw new ApiError(400, "New email is required.");
+//     }
 
-    const user = await User.findById(req.user._id);
+//     const user = await User.findById(req.user._id);
 
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
+//     if (!user) {
+//         throw new ApiError(404, "User not found.");
+//     }
 
-    // only unverified users can change email
-    if (user.isVerified) {
-        throw new ApiError(403, "Verified users cannot change email");
-    }
+//     // only unverified users can change email
+//     if (user.isVerified) {
+//         throw new ApiError(
+//             403,
+//             "Verified users cannot change their email address."
+//         );
+//     }
 
-    if (user.email.toLowerCase() === newEmail) {
-        throw new ApiError(400, "New email cannot be same as current email");
-    }
+//     if (user.email.toLowerCase() === newEmail) {
+//         throw new ApiError(
+//             400,
+//             "New email cannot be the same as the current email."
+//         );
+//     }
 
-    // check email already exists
-    const isEmailExist = await User.findOne({
-        email: newEmail,
-    });
+//     // check email already exists
+//     const isEmailExist = await User.findOne({
+//         email: newEmail,
+//     });
 
-    if (isEmailExist) {
-        throw new ApiError(400, "This email is already in use");
-    }
+//     if (isEmailExist) {
+//         throw new ApiError(400, "This email address is already in use.");
+//     }
 
-    user.email = newEmail;
+//     user.email = newEmail;
 
-    // mark as unverified again
-    user.isVerified = false;
-    // save updated user
-    await user.save({ validateBeforeSave: false });
+//     // mark as unverified again
+//     user.isVerified = false;
+//     // save updated user
+//     await user.save({ validateBeforeSave: false });
 
-    //generate token
-    const { rawToken, hashedToken } = generateTemporaryToken();
-    user.emailVerificationToken = hashedToken;
-    user.emailVerificationExpires = Date.now() + 30 * 60 * 1000; // 30 min
-    await user.save({ validateBeforeSave: false });
-    const verifyURL = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
-    //send to mail
-    try {
-        await sendEmail({
-            to: user.email,
-            subject: "Verify Your Email Address",
-            html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <h2>Email Verification</h2>
+//     //generate token
+//     const { rawToken, hashedToken } = generateTemporaryToken();
+//     user.emailVerificationToken = hashedToken;
+//     user.emailVerificationExpires = Date.now() + 30 * 60 * 1000; // 30 min
+//     await user.save({ validateBeforeSave: false });
+//     const verifyURL = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
+//     //send to mail
+//     try {
+//         await sendEmail({
+//             to: user.email,
+//             subject: "Verify Your Email Address",
+//             html: `
+//         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//             <h2>Email Verification</h2>
 
-            <p>
-                Thank you for registering on JournalPress.
-                Please verify your email address to access all features,
-                including publishing blogs, commenting, and subscriptions.
-            </p>
+//             <p>
+//                 Thank you for registering on JournalPress.
+//                 Please verify your email address to access all features,
+//                 including publishing blogs, commenting, and subscriptions.
+//             </p>
 
-            <a
-                href="${verifyURL}"
-                style="
-                    display: inline-block;
-                    padding: 10px 18px;
-                    background-color: #111827;
-                    color: #ffffff;
-                    text-decoration: none;
-                    border-radius: 6px;
-                    margin-top: 10px;
-                    margin-bottom: 10px;
-                "
-            >
-                Verify Email
-            </a>
+//             <a
+//                 href="${verifyURL}"
+//                 style="
+//                     display: inline-block;
+//                     padding: 10px 18px;
+//                     background-color: #111827;
+//                     color: #ffffff;
+//                     text-decoration: none;
+//                     border-radius: 6px;
+//                     margin-top: 10px;
+//                     margin-bottom: 10px;
+//                 "
+//             >
+//                 Verify Email
+//             </a>
 
-            <p>
-                This verification link will expire in 24 hours.
-            </p>
+//             <p>
+//                 This verification link will expire in 24 hours.
+//             </p>
 
-            <p>
-                If you did not create this account, you can safely ignore this email.
-            </p>
-        </div>
-    `,
-        });
-    } catch (emailError) {
-        // Email fail — DB clean
-        user.emailVerificationToken = undefined;
-        user.emailVerificationToken = undefined;
-        await user.save({ validateBeforeSave: false });
+//             <p>
+//                 If you did not create this account, you can safely ignore this email.
+//             </p>
+//         </div>
+//     `,
+//         });
+//     } catch (emailError) {
+//         // Email fail — DB clean
+//         user.emailVerificationToken = undefined;
+//         user.emailVerificationToken = undefined;
+//         await user.save({ validateBeforeSave: false });
 
-        throw new ApiError(
-            500,
-            "Unable to send the email at the moment. Please try again later."
-        );
-    }
+//         throw new ApiError(
+//             500,
+//             "Unable to send the email at the moment. Please try again later."
+//         );
+//     }
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                null,
-                "Email changed successfully. A verification email has been sent to your new email address."
-            )
-        );
-});
+//     return res
+//         .status(200)
+//         .json(
+//             new ApiResponse(
+//                 200,
+//                 null,
+//                 "Email changed successfully. A verification email has been sent to your new email address."
+//             )
+//         );
+// });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -538,6 +557,6 @@ export {
     resetPassword,
     requestEmailVerification,
     verifyEmail,
-    changeEmailRequest,
+    // changeEmailRequest,
     getCurrentUser,
 };

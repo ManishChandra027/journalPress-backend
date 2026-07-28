@@ -1,8 +1,28 @@
+const formatMessage = (message) => {
+    if (typeof message !== "string") {
+        return "Something went wrong. Please try again.";
+    }
+
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+        return "Something went wrong. Please try again.";
+    }
+
+    if (!/[.!?]$/.test(trimmedMessage)) {
+        return `${trimmedMessage}.`;
+    }
+
+    return trimmedMessage;
+};
+
 const errorHandler = (err, req, res, next) => {
-   res.status(err.statusCode || 500).json({
-      success: false,
-      message: err.message || "Internal Server Error",
-   });
+    const statusCode = err.statusCode || 500;
+    const message = formatMessage(err.message || "Internal server error.");
+
+    res.status(statusCode).json({
+        success: false,
+        message,
+    });
 };
 
 export default errorHandler;

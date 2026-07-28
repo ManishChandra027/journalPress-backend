@@ -16,7 +16,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         {
             $lookup: {
                 //2nd stage to lookup followers count
-
                 from: "follows",
                 localField: "_id",
                 foreignField: "following",

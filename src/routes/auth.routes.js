@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-    changeEmailRequest,
+    // changeEmailRequest,
     forgotPassword,
     getCurrentUser,
     loginUser,
@@ -30,7 +30,7 @@ router.route("/me").get(verifyJwt, getCurrentUser);
 
 router
     .route("/register")
-    .post(upload.single("avatar"), validate(registerSchema), registerUser);
+    .post(validate(registerSchema), registerUser);
 
 router.route("/login").post(validate(loginSchema), loginUser);
 
@@ -43,7 +43,7 @@ router
 //secured routes
 router.route("/logout").post(verifyJwt, logoutUser);
 
-router.route("/refresh-token").post(verifyJwt, refreshAccessToken); //accessToken refresh
+router.route("/refresh-token").post(refreshAccessToken); //accessToken refresh
 
 router
     .route("/change-password")
@@ -53,10 +53,10 @@ router
     .route("/request-email-verification")
     .post(verifyJwt, requestEmailVerification);
 
-router.route("/verify-email/:token").post(verifyJwt, verifyEmail);
+router.route("/verify-email/:token").post(verifyEmail);
 
-router
-    .route("/change-email-request")
-    .post(verifyJwt, validate(changeEmailSchema), changeEmailRequest);
+// router
+//     .route("/change-email-request")
+//     .post(verifyJwt, validate(changeEmailSchema), changeEmailRequest);
 
 export default router;

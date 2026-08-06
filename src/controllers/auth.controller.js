@@ -42,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
             409,
             "A user with this email or username already exists."
         );
-    }
+    }   
 
     const userData = {
         fullName,

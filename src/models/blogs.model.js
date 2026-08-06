@@ -63,26 +63,6 @@ const blogSchema = new Schema(
             default: "general",
         },
 
-        tags: {
-            type: [
-                {
-                    type: String,
-                    lowercase: true,
-                    trim: true,
-                    maxlength: 30,
-                },
-            ],
-
-            validate: {
-                validator: function (tags) {
-                    return tags.length <= 5;
-                },
-                message: "Maximum 5 tags allowed",
-            },
-
-            default: [],
-        },
-
         author: {
             type: Schema.Types.ObjectId,
             ref: "User",

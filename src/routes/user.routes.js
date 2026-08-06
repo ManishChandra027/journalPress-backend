@@ -12,7 +12,7 @@ import {
     getUserPublishedBlogs,
     unfollowUser,
     updateAccountDetails,
-    updateUserAvatar,
+    // updateUserAvatar,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import validate from "../middlewares/validate.middleware.js";
@@ -29,11 +29,11 @@ const router = Router();
 router
     .route("/me")
     .get(verifyJwt, getCurrentUser)
-    .patch(verifyJwt, validate(updateAccountSchema), updateAccountDetails);
+    .patch(verifyJwt, validate(updateAccountSchema),upload.single("avatar"), updateAccountDetails);
 
-router
-    .route("/me/avatar")
-    .patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
+// router
+//     .route("/me/avatar")
+//     .patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
 
 // GET /users/:username/blogs
 router

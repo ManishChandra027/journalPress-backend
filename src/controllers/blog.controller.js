@@ -10,12 +10,10 @@ import deleteFromCloudinary, {
 } from "../utils/cloudinary.js";
 
 const createBlog = asyncHandler(async (req, res) => {
-    let { title, content, excerpt, category, tags, status } = req.body;
+    let { title, content, excerpt, category,  status } = req.body;
     const user = req?.user;
 
-    if (tags) {
-        tags = [...new Set(tags)];
-    }
+
     if (!excerpt) {
         excerpt = content.slice(0, 150);
     }
@@ -36,20 +34,22 @@ const createBlog = asyncHandler(async (req, res) => {
         content,
         excerpt,
         category,
-        tags,
         author: user._id,
         status,
     };
+
     if (imageData) {
         blogData.coverImage = {
             url: imageData.url,
             public_id: imageData.public_id,
         };
     }
+
     const blog = await Blog.create(blogData);
     res.status(201).json(
         new ApiResponse(201, blog, "Blog Created Successfully")
     );
+
 });
 
 const getPublishedBlogs = asyncHandler(async (req, res) => {
@@ -142,6 +142,7 @@ const getMyBlogs = asyncHandler(async (req, res) => {
         isDeleted: false,
         author: user._id,
     };
+
     const allowedStatus = ["draft", "published"];
 
     if (status) {
@@ -150,11 +151,8 @@ const getMyBlogs = asyncHandler(async (req, res) => {
         }
 
         filter.status = status;
-    } else {
-        filter.status = {
-            $in: ["draft", "published"],
-        };
     }
+    
 
     if (category) {
         filter.category = category;
@@ -247,25 +245,25 @@ const getBlogBySlug = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Blog not found");
     }
     //update views
-    await Blog.findByIdAndUpdate(blog._id, {
-        $inc: { views: 1 },
-    });
+    // await Blog.findByIdAndUpdate(blog._id, {
+    //     $inc: { views: 1 },
+    // });
 
-    let isLiked = false;
-    if (req.user) {
-        const liked = await Like.exists({
-            user: req.user._id,
-            blog: blog._id,
-        });
+    // let isLiked = false;
+    // if (req.user) {
+    //     const liked = await Like.exists({
+    //         user: req.user._id,
+    //         blog: blog._id,
+    //     });
 
-        isLiked = !!liked;
-    }
-    const blogObj = blog.toObject();    
-  
-    blogObj.isLiked = isLiked;
+    //     isLiked = !!liked;
+    // }
+    // const blogObj = blog.toObject();
+
+    // blogObj.isLiked = isLiked;
 
     res.status(200).json(
-        new ApiResponse(200, blogObj, "Blog fetched successfully")
+        new ApiResponse(200, blog, "Blog fetched successfully")
     );
 });
 
@@ -289,6 +287,10 @@ const updateBlogStatus = asyncHandler(async (req, res) => {
         //or if (!blog.author.equals(user._id))
         throw new ApiError(403, "Unauthorized user");
     }
+    if(blog.status === status){ 
+        throw new ApiError(400, `Blog is already ${status}`);
+    }
+    
 
     blog.status = status;
 
@@ -317,6 +319,7 @@ const softDeleteBlog = asyncHandler(async (req, res) => {
         _id: id,
         isDeleted: false,
     });
+    
     if (!blog) {
         throw new ApiError(404, "Blog not found");
     }
@@ -433,7 +436,7 @@ const restoreAllBlogs = asyncHandler(async (req, res) => {
 });
 
 const updateBlog = asyncHandler(async (req, res) => {
-    let { title, content, excerpt, category, tags } = req.body;
+    let { title, content, excerpt, category,  } = req.body;
 
     const { id } = req.params;
     const user = req.user;
@@ -450,10 +453,6 @@ const updateBlog = asyncHandler(async (req, res) => {
 
     if (!oldBlog.author.equals(user._id)) {
         throw new ApiError(403, "Unauthorized user");
-    }
-
-    if (tags) {
-        tags = [...new Set(tags)];
     }
 
     if (excerpt) {
@@ -490,10 +489,7 @@ const updateBlog = asyncHandler(async (req, res) => {
         oldBlog.category = category;
     }
 
-    if (tags !== undefined) {
-        oldBlog.tags = tags;
-    }
-
+   
     if (imageData) {
         oldBlog.coverImage = {
             url: imageData.url,
@@ -536,14 +532,14 @@ const toggleLikeBlog = asyncHandler(async (req, res) => {
     }
 
     // check existing like
-    const existingBookmark = await Like.findOne({
+    const existingLike = await Like.findOne({
         user: user._id,
         blog: blogId,
     });
 
     // unlike
-    if (existingBookmark) {
-        await Like.findByIdAndDelete(existingBookmark._id);
+    if (existingLike) {
+        await Like.findByIdAndDelete(existingLike._id);
 
         blog.likesCount = Math.max(0, blog.likesCount - 1);
 

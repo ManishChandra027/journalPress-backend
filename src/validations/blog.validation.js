@@ -34,10 +34,8 @@ export const createBlogSchema = Joi.object({
         .valid(...BLOG_STATUS)
         .optional(),
 
-    tags: Joi.array()
-        .items(Joi.string().trim().lowercase().min(1).max(30))
-        .max(10)
-        .optional(),
+    
+
 });
 
 export const updateBlogSchema = Joi.object({
@@ -57,7 +55,7 @@ export const updateBlogSchema = Joi.object({
         .lowercase()
         .valid(...BLOG_STATUS),
 
-    tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(30)),
+   
 });
 
 export const blogQuerySchema = Joi.object({

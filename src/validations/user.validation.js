@@ -15,6 +15,7 @@ export const updateAccountSchema = Joi.object({
     fullName: Joi.string().trim().min(3).max(50),
 
     bio: Joi.string().trim().max(300).allow(""),
+    email: Joi.string().trim().lowercase().email(),
 }).min(1);
 
 export const usernameParamSchema = Joi.object({

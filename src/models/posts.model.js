@@ -1,7 +1,7 @@
-import mongoose, { Schema, model } from "mongoose";
+﻿import mongoose, { Schema, model } from "mongoose";
 import slugify from "slugify";
 
-const blogSchema = new Schema(
+const postSchema = new Schema(
     {
         title: {
             type: String,
@@ -34,7 +34,8 @@ const blogSchema = new Schema(
         coverImage: {
             url: {
                 type: String,
-                default: "",
+                default:
+                    "https://www.shutterstock.com/image-photo/post-information-website-concept-workplace-260nw-1189626925.jpg",
             },
 
             public_id: {
@@ -112,42 +113,44 @@ const blogSchema = new Schema(
 
 /* ---------------- INDEXES ---------------- */
 
-// unique blog url
-blogSchema.index({ slug: 1 }, { unique: true });
+// unique post url
+postSchema.index({ slug: 1 }, { unique: true });
 
-// author's blogs
-blogSchema.index({ author: 1, status: 1 });
+// author's posts
+postSchema.index({ author: 1, status: 1 });
 
 // category filtering
-blogSchema.index({ category: 1 });
+postSchema.index({ category: 1 });
 
-// latest blogs
-blogSchema.index({ createdAt: -1 });
+// latest posts
+postSchema.index({ createdAt: -1 });
 
 // search
-blogSchema.index({
+postSchema.index({
     title: "text",
     excerpt: "text",
 });
 
 /* ---------------- MIDDLEWARE ---------------- */
 
-blogSchema.pre("save", async function () {
+postSchema.pre("save", async function () {
     // generate unique slug
     if (this.isModified("title")) {
         const baseSlug = slugify(this.title, {
             lower: true,
             strict: true,
             trim: true,
-        }).slice(0, 60);
+        })
+            .slice(0, 60)
+            .replace(/-+$/, "");
 
         let slug = baseSlug;
         let counter = 1;
 
         while (
-            await mongoose.models.Blog.exists({
+            await mongoose.models.Post.exists({
                 slug,
-                _id: { $ne: this._id }, //for update blog when title is not changed then slug will also be same so we have to exclude current blog id
+                _id: { $ne: this._id }, //for update post when title is not changed then slug will also be same so we have to exclude current post id
             })
         ) {
             slug = `${baseSlug}-${counter}`;
@@ -170,12 +173,12 @@ blogSchema.pre("save", async function () {
         this.status === "published" &&
         !this.publishedAt
     ) {
-        this.publishedAt = new Date(); //update date when blog is published or draft to published
+        this.publishedAt = new Date(); //update date when post is published or draft to published
     }
 });
 
 /* ---------------- MODEL ---------------- */
 
-const Blog = model("Blog", blogSchema);
+const Post = model("Post", postSchema);
 
-export default Blog;
+export default Post;

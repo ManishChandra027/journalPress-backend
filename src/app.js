@@ -1,10 +1,10 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
-import blogRoutes from "./routes/blog.routes.js";
+import postRoutes from "./routes/post.routes.js";
 import errorHandler from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -15,6 +15,7 @@ app.use(
         credentials: true,
     })
 );
+
 app.use(express.json({ limit: "16kb" })); //to conver json to js object in body
 app.use(express.urlencoded({ extended: false, limit: "16kb" }));
 app.use(express.static("public"));
@@ -34,12 +35,14 @@ app.get("/api/v1/testing", (req, res) => {
     });
 });
 
+
+
 // http://localhost:8000/api/v1/auth/
 app.use("/api/v1/auth", authRoutes);
 // http://localhost:8000/api/v1/users/
 app.use("/api/v1/users", userRoutes);
-// http://localhost:8000/api/v1/blogs/
-app.use("/api/v1/blogs", blogRoutes);
+// http://localhost:8000/api/v1/posts/
+app.use("/api/v1/posts", postRoutes);
 
 app.use(errorHandler);
 

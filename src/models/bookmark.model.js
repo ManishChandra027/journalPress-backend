@@ -1,4 +1,4 @@
-import mongoose,{Schema,model} from "mongoose";
+﻿import mongoose,{Schema,model} from "mongoose";
 const bookmarkSchema = new Schema(
     {
         user: {
@@ -7,9 +7,9 @@ const bookmarkSchema = new Schema(
             required: true,
         },
 
-        blog: {
+        post: {
             type: Schema.Types.ObjectId,
-            ref: "Blog",
+            ref: "Post",
             required: true,
         },
     },
@@ -17,7 +17,7 @@ const bookmarkSchema = new Schema(
 );
 
 bookmarkSchema.index(
-   { user: 1, blog: 1 },
+   { user: 1, post: 1 },
    { unique: true }
 );
 

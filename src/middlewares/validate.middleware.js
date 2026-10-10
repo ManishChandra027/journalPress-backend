@@ -2,6 +2,13 @@ import ApiError from "../utils/ApiError.js";
 
 const validate = (schema, property = "body") => {
     return (req, res, next) => {
+        // if (property === "body" && req.file && !req.body.avatar) {
+        //     req.body.avatar = req.file;
+        // }
+        // if (property === "body" && req.file && !req.body.coverImage) {
+        //     req.body.coverImage = req.file;
+        // }
+
         const { error, value } = schema.validate(req[property], {
             abortEarly: false,
             convert: true,

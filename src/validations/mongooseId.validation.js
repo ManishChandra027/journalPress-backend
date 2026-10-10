@@ -1,4 +1,4 @@
-//TODO add  validation for other mongoose objectIds
+﻿//TODO add  validation for other mongoose objectIds
 import Joi from "joi";
 import mongoose from "mongoose";
 
@@ -15,6 +15,6 @@ export const objectIdSchema = Joi.object({
 });
 
 // export const commentParamSchema = Joi.object({
-//     blogId: Joi.string().custom(objectId),
+//     postId: Joi.string().custom(objectId),
 //     commentId: Joi.string().custom(objectId),
 // });

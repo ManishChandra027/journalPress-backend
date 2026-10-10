@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import {
     optionalVerifyJwt,
     verifyJwt,
@@ -9,7 +9,7 @@ import {
     getUserFollowers,
     getUserFollowing,
     getUserPublicProfile,
-    getUserPublishedBlogs,
+    getUserPublishedPosts,
     unfollowUser,
     updateAccountDetails,
     // updateUserAvatar,
@@ -21,7 +21,7 @@ import {
     updateAccountSchema,
     usernameParamSchema,
 } from "../validations/user.validation.js";
-import { blogQuerySchema } from "../validations/blog.validation.js";
+import { postQuerySchema } from "../validations/post.validation.js";
 import { requireVerifiedUser } from "../middlewares/requireVerifiedUser.middleware.js";
 
 const router = Router();
@@ -29,19 +29,24 @@ const router = Router();
 router
     .route("/me")
     .get(verifyJwt, getCurrentUser)
-    .patch(verifyJwt, validate(updateAccountSchema),upload.single("avatar"), updateAccountDetails);
+    .patch(
+        verifyJwt,
+        upload.single("avatar"),
+        validate(updateAccountSchema),
+        updateAccountDetails
+    );
 
 // router
 //     .route("/me/avatar")
 //     .patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
 
-// GET /users/:username/blogs
+// GET /users/:username/posts
 router
-    .route("/:username/blogs")
+    .route("/:username/posts")
     .get(
         validate(usernameParamSchema, "params"),
-        validate(blogQuerySchema, "query"),
-        getUserPublishedBlogs
+        validate(postQuerySchema, "query"),
+        getUserPublishedPosts
     );
 
 // POST /users/:username/follow
@@ -73,6 +78,10 @@ router
 // GET /users/:username
 router
     .route("/:username")
-    .get(verifyJwt,validate(usernameParamSchema, "params"), getUserPublicProfile);
+    .get(
+        verifyJwt,
+        validate(usernameParamSchema, "params"),
+        getUserPublicProfile
+    );
 
 export default router;

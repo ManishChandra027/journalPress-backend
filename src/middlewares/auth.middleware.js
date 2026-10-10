@@ -8,7 +8,7 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
         req.cookies?.accessToken ||
         req.header("Authorization")?.replace("Bearer ", "").trim() ||
         null;
-    // or req.header("Authorization")?.startsWith("Bearer ")
+  
     if (!token) throw new ApiError(401, "Access token is required");
 
     let decodedToken;
@@ -20,11 +20,10 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
     }
 
     if (!decodedToken?._id) {
-    throw new ApiError(401, "Invalid access token payload");
-}
+        throw new ApiError(401, "Invalid access token payload");
+    }
 
     const user = await User.findById(decodedToken._id);
-    if (!user) throw new ApiError(401, "User not found");
 
     req.user = user;
 
@@ -66,4 +65,35 @@ const optionalVerifyJwt = asyncHandler(async (req, res, next) => {
     next();
 });
 
-export { verifyJwt, optionalVerifyJwt };
+const verifyRefreshToken = asyncHandler(async (req, res, next) => {
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!token) {
+        throw new ApiError(401, "Refresh token is required");
+    }
+
+    let decodedToken;
+    try {
+        decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+        throw new ApiError(401, "Invalid or expired refresh token");
+    }
+
+    if (!decodedToken?._id) {
+        throw new ApiError(401, "Invalid access token payload");
+    }
+    const user = await User.findById(decodedToken._id).select("refreshToken");
+    if (!user) {
+        throw new ApiError(401, "Invalid refresh token.");
+    }
+
+    if (user.refreshToken !== token) {
+        throw new ApiError(401, "Refresh token is expired or already used.");
+    }
+
+    req.user = user;
+
+    next();
+});
+
+export { verifyJwt, optionalVerifyJwt, verifyRefreshToken };

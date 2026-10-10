@@ -1,6 +1,6 @@
-import Joi from "joi";
+﻿import Joi from "joi";
 
-const BLOG_CATEGORIES = [
+const POST_CATEGORIES = [
     "technology",
     "lifestyle",
     "travel",
@@ -13,32 +13,32 @@ const BLOG_CATEGORIES = [
     "general",
 ];
 
-const BLOG_STATUS = ["draft", "published"];
+const POST_STATUS = ["draft", "published"];
 
-export const createBlogSchema = Joi.object({
+export const createPostSchema = Joi.object({
     title: Joi.string().trim().min(5).max(100).required(),
 
     content: Joi.string().trim().min(10).required(),
 
-    excerpt: Joi.string().trim().min(5).max(300).optional(),
+    excerpt: Joi.string().trim().min(5).max(300).allow("").optional(),
 
     category: Joi.string()
         .trim()
         .lowercase()
-        .valid(...BLOG_CATEGORIES)
+        .valid(...POST_CATEGORIES)
         .optional(),
 
     status: Joi.string()
         .trim()
         .lowercase()
-        .valid(...BLOG_STATUS)
+        .valid(...POST_STATUS)
         .optional(),
 
     
 
 });
 
-export const updateBlogSchema = Joi.object({
+export const updatePostSchema = Joi.object({
     title: Joi.string().trim().min(10).max(100),
 
     content: Joi.string().trim().min(10),
@@ -48,17 +48,16 @@ export const updateBlogSchema = Joi.object({
     category: Joi.string()
         .trim()
         .lowercase()
-        .valid(...BLOG_CATEGORIES),
+        .valid(...POST_CATEGORIES),
 
     status: Joi.string()
         .trim()
         .lowercase()
-        .valid(...BLOG_STATUS),
+        .valid(...POST_STATUS),
 
-   
 });
 
-export const blogQuerySchema = Joi.object({
+export const postQuerySchema = Joi.object({
     page: Joi.number().integer().min(1).default(1),
 
     limit: Joi.number().integer().min(1).max(50).default(10),
@@ -66,10 +65,11 @@ export const blogQuerySchema = Joi.object({
     category: Joi.string()
         .trim()
         .lowercase()
-        .valid(...BLOG_CATEGORIES)
+        .valid(...POST_CATEGORIES)
         .optional(),
 
     search: Joi.string().trim().lowercase().optional(),
+    status: Joi.string().trim().lowercase().valid(...POST_STATUS).optional(),
 
     sort: Joi.string()
         .trim()
@@ -90,6 +90,6 @@ export const slugParamSchema = Joi.object({
 export const statusBodySchema=Joi.object({
     status:Joi.string().lowercase().trim().valid("draft", "published")
 })
-// updateBlogStatusSchema
+// updatePostStatusSchema
 // mongoIdParamSchema
 // slugParamSchema

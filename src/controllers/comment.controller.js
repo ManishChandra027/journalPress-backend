@@ -1,134 +1,96 @@
-import Comment from "../models/comment.model.js";
-import ApiError from "../utils/ApiError.js";
+﻿import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import asyncHandler from "../utils/asyncHandler.js";
 
-const addComments = asyncHandler(async (req, res) => {
-    const { blogId } = req.params;
+import {
+    addComment,
+    getPostComments,
+    updateComment,
+    deleteComment,
+} from "../services/comment.service.js";
 
-    let { comment } = req.body;
+/*
+|--------------------------------------------------------------------------
+| Add Comment
+|--------------------------------------------------------------------------
+*/
 
-    const user = req.user;
+const createComment = asyncHandler(async (req, res) => {
+    const { comment } = req.body;
+    const { postId } = req.params;
 
-    if (!blogId) {
-        throw new ApiError(400, "Blog id is required");
-    }
+    const userId = req.user._id;
 
-    // check blog exists
-    const blog = await Blog.findOne({
-        _id: blogId,
-        isDeleted: false,
-        status: "published",
+    const newComment = await addComment({
+        postId,
+        comment,
+        userId,
     });
 
-    if (!blog) {
-        throw new ApiError(404, "Blog not found");
-    }
-
-    // create comment
-    const newComment = await Comment.create({
-        content: comment,
-        user: user._id,
-        blog: blogId,
-    });
-
-    res.status(201).json(
-        new ApiResponse(201, newComment, "Comment created successfully")
-    );
+    return res
+        .status(201)
+        .json(new ApiResponse(201, newComment, "Comment added successfully"));
 });
-const getBlogComments = asyncHandler(async (req, res) => {
-    const { blogId } = req.params;
 
-    if (!blogId) {
-        throw new ApiError(400, "Blog id is required");
-    }
+/*
+|--------------------------------------------------------------------------
+| Get Post Comments
+|--------------------------------------------------------------------------
+*/
 
-    // check blog exists
-    const blog = await Blog.findOne({
-        _id: blogId,
-        isDeleted: false,
-        status: "published",
+const getComments = asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+
+    const comments = await getPostComments(postId);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, comments, "Comments fetched successfully"));
+});
+
+/*
+|--------------------------------------------------------------------------
+| Update Comment
+|--------------------------------------------------------------------------
+*/
+
+const editComment = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { comment } = req.body;
+
+    const userId = req.user._id;
+
+    const updatedComment = await updateComment({
+        commentId,
+        comment,
+        userId,
     });
 
-    if (!blog) {
-        throw new ApiError(404, "Blog not found");
-    }
-
-    const comments = await Comment.find({
-        blog: blogId,
-    })
-        .populate("user", "fullname username avatar")
-        .sort({
-            createdAt: -1,
-        });
-
-    res.status(200).json(
-        new ApiResponse(200, comments, "Comments fetched successfully")
-    );
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, updatedComment, "Comment updated successfully")
+        );
 });
-const updateComment = asyncHandler(async (req, res) => {
+
+/*
+|--------------------------------------------------------------------------
+| Delete Comment
+|--------------------------------------------------------------------------
+*/
+
+const removeComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
 
-    let { comment } = req.body;
+    const userId = req.user._id;
 
-    const user = req.user;
-
-    if (!commentId) {
-        throw new ApiError(400, "Comment id is required");
-    }
-
-    // find comment
-    const existingComment = await Comment.findById(commentId);
-
-    if (!existingComment) {
-        throw new ApiError(404, "Comment not found");
-    }
-
-    // authorization
-    if (!existingComment.user.equals(user._id)) {
-        throw new ApiError(403, "Unauthorized user");
-    }
-
-    // update
-    existingComment.content = comment;
-
-    await existingComment.save({
-        validateBeforeSave: false,
+    await deleteComment({
+        commentId,
+        userId,
     });
 
-    res.status(200).json(
-        new ApiResponse(200, existingComment, "Comment updated successfully")
-    );
+    return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Comment deleted successfully"));
 });
 
-const deleteComment = asyncHandler(async (req, res) => {
-    const { commentId } = req.params;
-
-    const user = req.user;
-
-    // validation
-    if (!commentId) {
-        throw new ApiError(400, "Comment id is required");
-    }
-
-    // find comment
-    const comment = await Comment.findById(commentId);
-
-    if (!comment) {
-        throw new ApiError(404, "Comment not found");
-    }
-
-    // authorization
-    if (!comment.user.equals(user._id)) {
-        throw new ApiError(403, "Unauthorized user");
-    }
-
-    // delete
-    await Comment.findByIdAndDelete(commentId);
-
-    res.status(200).json(
-        new ApiResponse(200, null, "Comment deleted successfully")
-    );
-});
-
-export { addComments, getBlogComments, updateComment, deleteComment };
+export { createComment, getComments, editComment, removeComment };

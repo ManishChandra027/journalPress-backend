@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from "mongoose";
+﻿import mongoose, { Schema, model } from "mongoose";
 
 const likeSchema = new Schema(
     {
@@ -7,9 +7,9 @@ const likeSchema = new Schema(
             ref: "User",
             required: true,
         },
-        blog: {
+        post: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Blog",
+            ref: "Post",
             required: true,
         },
     },

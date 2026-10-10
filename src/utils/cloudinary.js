@@ -13,6 +13,12 @@ const uploadOnCloudinary = async (localFilePath) => {
             throw new Error("Local file path is required");
         }
 
+        if (!fs.existsSync(localFilePath)) {
+            throw new Error(
+                `Uploaded file not found on disk: ${localFilePath}`
+            );
+        }
+
         const result = await cloudinary.uploader.upload(localFilePath, {
             folder: "JournalPress",
             resource_type: "auto",
@@ -23,8 +29,12 @@ const uploadOnCloudinary = async (localFilePath) => {
             public_id: result.public_id,
         };
     } catch (error) {
-        console.error("Upload on Cloudinary failed:", error.message);
-        throw new Error("Cloudinary upload failed");
+        const detail =
+            error?.error?.message ||
+            error?.message ||
+            "Unknown Cloudinary upload error";
+        console.error("Upload on Cloudinary failed:", detail);
+        throw new Error(`Cloudinary upload failed: ${detail}`);
     } finally {
         if (localFilePath && fs.existsSync(localFilePath)) {
             fs.unlinkSync(localFilePath);
